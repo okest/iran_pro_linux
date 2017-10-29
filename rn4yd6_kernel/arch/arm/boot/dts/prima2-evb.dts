@@ -1,0 +1,258 @@
+/*
+ * DTS file for CSR SiRFprimaII Evaluation Board
+ *
+ * Copyright (c) 2012 Cambridge Silicon Radio Limited, a CSR plc group company.
+ *
+ * Licensed under GPLv2 or later.
+ */
+
+/dts-v1/;
+
+/include/ "prima2.dtsi"
+
+/ {
+	model = "CSR SiRFprimaII Evaluation Board";
+	compatible = "sirf,prima2", "sirf,prima2-cb";
+
+	memory {
+		reg = <0x00000000 0x20000000>;
+	};
+	sound {
+		compatible = "sirf,sirf-inner";
+		sirf,inner-codec = <&audio>;
+		sirf,inner-platform = <&audio>;
+		hp-pa-gpios = <&gpio 56 0>;
+		hp-switch-gpios = <&gpio 14 0>;
+	};
+
+	bt {
+		compatible = "csr,bt-8311";
+		bt_gpio_power = <&gpio 62 0>;
+		bt_gpio_reset = <&gpio 3 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm1_pins_a>;
+		pwms = <&pwm 1 30518>;
+	};
+
+	bt_sco: bt_sco@0 {
+		#sound-dai-cells = <0>;
+		compatible = "bt-sco";
+		status = "okay";
+	};
+
+	sirf-bt-sco {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "dsp_a";
+		simple-audio-card,cpu {
+			sound-dai = <&usp0>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&bt_sco>;
+			bitclock-master;
+			frame-master;
+		};
+	};
+
+	hdmi_codec: hdmi_codec@0 {
+		#sound-dai-cells = <0>;
+		compatible = "linux,hdmi-audio";
+		status = "okay";
+	};
+
+	sirf-hdmi {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,cpu {
+			sound-dai = <&i2s>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&hdmi_codec>;
+			bitclock-master;
+			frame-master;
+		};
+	};
+
+	sirf-backlight {
+		compatible = "pwm-backlight";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm3_pins_a>;
+		pwms = <&pwm 3 50000>;
+		brightness-levels = <0 48 56 64 96 112 128 255>;
+		default-brightness-level = <6>;
+	};
+	axi {
+		peri-iobg {
+			pci-iobg {
+				sd1: sdhci@56100000 {
+					status = "okay";
+					pinctrl-names = "default";
+					pinctrl-0 = <&sdmmc1_pins_a>;
+				};
+				sd4: sdhci@56400000 {
+					status = "okay";
+					non-removable;
+					cap-power-off-card;
+					pinctrl-names = "default";
+					pinctrl-0 = <&sdmmc4_pins_a>;
+				};
+				sd5: sdhci@56500000 {
+					status = "okay";
+					pinctrl-names = "default";
+					pinctrl-0 = <&sdmmc5_pins_a>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+					sdio_sirf@0 {
+						compatible = "sirf,trig_sdio";
+						reg = <0x0>;
+					};
+				};
+			};
+
+			uart@b0050000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart0_pins_a>;
+				sirf,uart-has-rtscts;
+			};
+			uart@b0060000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart1_pins_a>;
+			};
+			usp@b0080000 {
+				#sound-dai-cells = <0>;
+				compatible = "sirf,prima2-usp-pcm";
+				pinctrl-names = "default";
+				pinctrl-0 = <&usp0_only_utfs_pins_a>;
+			};
+			usp@b0090000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&usp1_uart_nostreamctrl_pins_a>;
+			};
+			vip@b00C0000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&vip_pins_a>;
+				power-gpio = <&gpio 9 0>;
+				reset-gpio = <&gpio 12 0>;
+				rearview-gpio = <&gpio 31 0>;
+				port {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					vip0_0: endpoint@0 {
+						reg = <0>;
+						remote-endpoint = <&tw9900_1>;
+						data-shift = <1>;	/* select pxd_data[7:0] as valid data */
+					};
+				};
+			};
+			i2c0: i2c@b00e0000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c0_pins_a>;
+				clock-frequency = <40000>;
+				lcd_mcu: lcd_mcu@40{
+					compatible = "sirf,lcd-mcu";
+					reg = <0x40>;
+				};
+				tw9900: decoder@44 {
+					compatible = "techwell,tw9900";
+					reg = <0x44>;
+					input-number = <2>;
+					inputs = <&cvbs0 &cvbs1>;
+					cvbs0: cvbs@0 {
+						input-name = "camera";
+						input-id = <0>;
+					};
+					cvbs1: cvbs@1 {
+						input-name = "dvd";
+						input-id = <1>;
+					};
+					port {
+						tw9900_1: endpoint {
+							remote-endpoint = <&vip0_0>;
+						};
+					};
+				};
+
+			};
+			i2c1: i2c@b00f0000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c1_pins_a>;
+				ch7102@f0{
+					compatible = "chrontel,ch7102";
+					reg = <0xf0>;
+				};
+				tangoc-ts@5c{
+					compatible = "pixcir,tangoc-ts";
+					interrupt-parent = <&gpio>;
+					interrupts = <34 0x02>;
+					reg = <0x5c>;
+				};
+				ft5x06@38{
+					compatible = "focaltech,ft5x06";
+					interrupt-parent = <&gpio>;
+					interrupts = <34 0x02>;
+                                        reg = <0x38>;
+                                };
+
+			};
+			pwm: pwm@b0130000 {
+				/* sigsrc1(pll1) is used for dvfs, ignore it */
+				clocks = <&clks 21>, <&clks 1>, <&clks 3>,
+					<&clks 0>, <&clks 4>;
+				clock-names = "pwmc", "sigsrc0", "sigsrc2",
+					"sigsrc3", "sigsrc4";
+			};
+			adc@b0110000 {
+				tsc {
+					compatible = "sirf,prima2-tsc";
+					interrupts = <33>;
+					io-channels = <&adc 0>;
+					io-channel-names = "single_ts";
+				};
+			};
+			pulsec@b0150000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pulse_count_pins_a>;
+			};
+		};
+                disp-iobg {
+                      lcd@90010000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&lcd_24pins_a>;
+		      };
+		};
+	};
+
+	display0: display@0 {
+		compatible = "tm,WSVGA-panel", "rgb-panel";
+		panel-ctrl = <&lcd_mcu>;
+		source = "rgb.0";
+
+		bl-gpios = <&gpio 7 0>;
+		vcc-gpios = <&gpio 4 0>;
+		power-vdd  = <0x00160015>;
+		power-vee  = <0x00180017>;
+		data-lines = <24>;
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <51200000>;
+				hactive = <1024>;
+				vactive = <600>;
+				hfront-porch = <288>;
+				hback-porch = <28>;
+				hsync-len = <4>;
+				vback-porch = <8>;
+				vfront-porch = <24>;
+				vsync-len = <3>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+	};
+};

@@ -1,0 +1,6 @@
+config MS_FMS6502_I2C
+	tristate "FMS6502 i2c driver"
+	default n
+	help
+	  Say Y here to include support for communicating with the data
+	  processing of APPLE MFI.

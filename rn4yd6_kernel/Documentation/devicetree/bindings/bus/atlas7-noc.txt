@@ -1,0 +1,36 @@
+Device tree bindings for CSRatlas7 NoC(Network on Chip)
+
+CSR atlas7 uses a NoC bus, SoC is splitted into mutiple MACROs. Every MACRO
+holds some hardware modules. For each MACRO
+properties:
+- compatible : Should be "arteris, flexnoc"
+- #address-cells: should be 1
+- #size-cells: should be 1
+- ranges : the child address space are mapped 1:1 onto the parent address space
+
+Sub-nodes:
+All the devices connected to noc are described using sub-node to noc. For
+example, AUDMSCM MACRO includes multimediam nodes such as KAS, AC97, IACC, I2S,
+USP0~3, LVDS.
+For each MACRO, there is at least a noc service sub-node. This noc service
+may provide bandwidth probe, transaction latency profile, error logger, QoS(
+quality of service), register firewall(protect registers by region), target
+firewall(protect registers by per-register).
+Noc service sub-nodes:
+properties:
+- compatible : Should be one of
+	"sirf,noc-macro", "sirf,atlas7-ntfw"
+- reg: A resource specifier for the register space
+- interrupts : Should be the interrupt number - optional
+- regofs: define offset of NoC related registers
+	for example:
+	regofs = <&cpum 0x800 0x900 0x1050 0>;
+	- macro: macro name
+	- errlogoff: the offset of errlog register
+	- faultenoff: the offset of fault enable register
+	- regfwoff: the offset of register firewall register
+	- schedoff: the offset of scheduler port register
+
+There are spram firewalls in the system. They can detect illegal
+hardware access to a7spram/m3sram for security protection.
+if -regofs is not defined, that is the spram firewall.

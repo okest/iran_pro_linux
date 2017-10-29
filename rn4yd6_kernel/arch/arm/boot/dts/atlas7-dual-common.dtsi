@@ -1,0 +1,166 @@
+/*
+ * common components for atlas7 non-entry EVB
+ *
+ * Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/ {
+	aliases {
+		display0 = &lvds;
+	};
+
+	regulators {
+		reg_usb0_otg_vbus: regulator@0 {
+			compatible = "regulator-fixed";
+			reg = <0>;
+			regulator-name = "usb0_otg_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			enable-active-high;
+			gpio = <&gpio_0 46 0>;
+		};
+
+		reg_usb1_otg_vbus: regulator@1 {
+			compatible = "regulator-fixed";
+			reg = <0>;
+			regulator-name = "usb1_otg_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			enable-active-high;
+			gpio = <&gpio_0 49 0>;
+		};
+	};
+
+	noc {
+		mediam {
+			usb0: usb@17060000 {
+				vbus-supply = <&reg_usb0_otg_vbus>;
+				status = "okay";
+			};
+
+			usbphy0: usbphy@0 {
+				status = "okay";
+			};
+
+			usb1: usb@17070000 {
+				vbus-supply = <&reg_usb1_otg_vbus>;
+				status = "okay";
+			};
+
+			usbphy1: usbphy@1 {
+				status = "okay";
+			};
+		};
+
+		gnssm {
+			gmac: eth@180b0000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&rg_eth_mac_pmx
+					&rg_gmac_phy_intr_n_pmx
+					&rg_rgmii_mac_pmx>;
+			};
+
+			spi1: spi@18200000 {
+				status = "okay";
+				compatible = "sirf,prima2-spi-slave";
+				pinctrl-0 = <&sp1_spi_pmx>;
+				pinctrl-names = "default";
+				spiflash: mxicy@0{
+					compatible = "mxicy,mx25l6405d";
+					reg = <0>;
+					spi-max-frequency = <37500000>;
+					spi-cpha;
+					spi-cpol;
+					#address-cells = <1>;
+					#size-cells = <1>;
+					partitions@0 {
+						label = "myspiboot";
+						reg = <0x0 0x800000>;
+					};
+				};
+			};
+		};
+
+		rtcm {
+			rtc-iobg@18840000 {
+				pwrc@3000 {
+					atlas7-gps {
+					   status = "okay";
+					   pinctrl-names = "default";
+					   pinctrl-0 = <&gn_trg_spi_pmx0
+						&gn_trg_pmx0>;
+					   gps-supply = <&gnss_supply>;
+					};
+				};
+			};
+		};
+
+		lvds: display@1 {
+			compatible = "lvds-panel";
+			source = "lvds.0";
+			status = "okay";
+
+			data-lines  = <24>;
+
+			display-timings {
+				native-mode = <&timing1>;
+				timing1: timing1 {
+					clock-frequency = <50000000>;
+					hactive = <1024>;
+					vactive = <600>;
+					hfront-porch = <220>;
+					hback-porch = <100>;
+					hsync-len = <1>;
+					vback-porch = <10>;
+					vfront-porch = <25>;
+					vsync-len = <1>;
+					hsync-active = <0>;
+					vsync-active = <0>;
+					de-active = <1>;
+					pixelclk-active = <1>;
+				};
+			};
+		};
+
+		hdmi: display@2 {
+			compatible = "hdmi-panel";
+			source = "rgb.0";
+			/*status = "okay";*/
+			status = "disabled";
+			pinctrl-names = "default";
+			pinctrl-0 = <&ld_ldd_16bit_pmx &ld_ldd_fck_pmx
+				&ld_ldd_lck_pmx>;
+
+			data-lines  = <16>;
+
+			display-timings {
+				native-mode = <&timing2>;
+				timing2: timing2 {
+					clock-frequency = <74250000>;
+					hactive = <1280>;
+					vactive = <720>;
+					hfront-porch = <110>;
+					hback-porch = <220>;
+					hsync-len = <40>;
+					vback-porch = <19>;
+					vfront-porch = <5>;
+					vsync-len = <6>;
+					hsync-active = <0>;
+					vsync-active = <0>;
+					de-active = <1>;
+					pixelclk-active = <1>;
+				};
+			};
+		};
+	};
+};

@@ -1,0 +1,6 @@
+config MS_MFI_I2C
+	tristate "Apple MFI i2c driver"
+	default n
+	help
+	  Say Y here to include support for communicating with the data
+	  processing of APPLE MFI.

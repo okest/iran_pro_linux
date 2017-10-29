@@ -1,0 +1,357 @@
+/*
+ * DTS file for CSR SiRFatlas7 Evaluation Board
+ *
+ * Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+
+/include/ "atlas7.dtsi"
+
+
+#include <dt-bindings/input/input.h>
+
+/ {
+	model = "CSR SiRFatlas7 PXP Board";
+	compatible = "sirf,atlas7-pxp", "sirf,atlas7-cb", "sirf,atlas7";
+
+	chosen {
+		/* bootargs = "co
+				initrd=0x43008000,0x500000"; */
+		bootargs = "console=ttySiRF1,115200 earlyprintk";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x40000000 0x20000000>; /* 512M for PXP */
+	};
+
+	regulators {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		vdd_cpu: pwm_regulator  {
+			compatible = "pwm-regulator";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pw_pwm_cpu_vol_pmx0>;
+			pwms = <&pwm 2 60>;
+			voltage-table = <1265000 0>,
+				<1237542 4>,
+				<1210038 8>,
+				<1182534 12>,
+				<1155030 16>,
+				<1127526 20>,
+				<1100022 24>,
+				<1072518 28>,
+				<1045014 32>,
+				<1017510 36>,
+				<990006 40>,
+				<962502 44>,
+				<934998 48>,
+				<907494 52>,
+				<879990 56>;
+			regulator-min-microvolt = <879990>;
+			regulator-max-microvolt = <1265000>;
+			regulator-name = "vdd_cpu";
+		};
+
+		vdd_core: vdd_core {
+			compatible = "pwm-regulator";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pw_cko0_pmx0>;
+			pwms = <&pwm 4 60>;
+			voltage-table = <1265000 0>,
+				<1237542 4>,
+				<1210038 8>,
+				<1182534 12>,
+				<1155030 16>,
+				<1127526 20>,
+				<1100022 24>,
+				<1072518 28>,
+				<1045014 32>,
+				<1017510 36>,
+				<990006 40>,
+				<962502 44>,
+				<934998 48>,
+				<907494 52>,
+				<879990 56>;
+			regulator-min-microvolt = <879990>;
+			regulator-max-microvolt = <1265000>;
+			regulator-name = "vdd_core";
+		};
+
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/* global region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			alloc-ranges = <0x49C00000 0x6000000>;
+			size = <0x6000000>;
+			alignment = <0x2000>;
+			linux,cma-default;
+		};
+
+		ipc_mem0: ns_m3_mem@4fd00000 {
+			compatible = "sirf,reserved-memory";
+			reg = <0x4FD00000 0x10000>;
+		};
+
+		ipc_mem1: ns_kal_mem@4fd10000 {
+			compatible = "sirf,reserved-memory";
+			reg = <0x4FD10000 0x10000>;
+		};
+
+		nanddisk_reserved: nanddisk@46000000 {
+			reg = <0x46000000 0x200000>;
+			no-map;
+		};
+
+		jpeg_reserved: jpeg@57000000 {
+			reg = <0x57000000 0x1800000>;
+			no-map;
+		};
+
+		multimedia_reserved: multimedia@58800000 {
+			reg = <0x58800000 0x2400000>;
+			no-map;
+		};
+
+		uboot_reserved: uboot@5b800000 {
+			reg = <0x5b800000 0x200000>;
+			no-map;
+		};
+
+		cm3_reserved: cm3@4fe00000 {
+			reg = <0x4fe00000 0x100000>;
+			no-map;
+		};
+	};
+
+	noc {
+		gpum {
+			sdr@0x13010000 {
+				status = "disabled";
+			};
+		};
+		audiom {
+			timer@10dc0000 {
+				status = "okay";
+			};
+
+			timerb@10dc8000 {
+				status = "disabled";
+			};
+
+			usp2: usp@10d40000 {
+			       status = "disabled";
+			       compatible = "sirf,atlas7-usp-spi";
+			       pinctrl-0 = <&audio_uart2_urfs_pmx0
+					&audio_uart2_urxd_pmx0
+					&audio_uart2_usclk_pmx0
+					&audio_uart2_utfs_pmx0
+					&audio_uart2_utxd_pmx0>;
+			       pinctrl-names = "default";
+			       fifosize = <512>;
+				uspspiflash: mxicy@0{
+					status = "okay";
+					compatible = "mxicy,mx25l6405d";
+					reg = <0>;
+					spi-max-frequency = <37500000>;
+					spi-cpha;
+					spi-cpol;
+					#address-cells = <1>;
+					#size-cells = <1>;
+					partitions@0 {
+						label = "myspiboot";
+						reg = <0x0 0x800000>;
+					};
+				};
+			};
+
+			pulsec@10d90000 {
+				status = "disabled";
+			};
+			adc: adc@10d80000 {
+				status = "disabled";
+			};
+			i2s: i2s@10d02000 {
+				status = "disabled";
+			};
+			vip0@10db0000 {
+				status = "disabled";
+			};
+			cvd@10db2000 {
+				status = "disabled";
+			};
+
+		};
+
+		mediam {
+			nand@17050000 {
+				memory-region = <&nanddisk_reserved>;
+			};
+
+			multimedia@15000000 {
+				memory-region = <&multimedia_reserved>;
+			};
+
+			jpeg@17000000 {
+				memory-region = <&jpeg_reserved>;
+			};
+
+		};
+
+		vdifm {
+			sdhci@14200000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&sd2_basic_pmx
+						&sd2_cdb_pmx0
+						&sd2_wpb_pmx0>;
+			};
+
+		};
+
+		gnssm {
+			uart1: uart@18020000 {
+				status = "okay";
+			};
+
+			uart0: uart@18010000 {
+				status = "disabled";
+				pinctrl-0 = <&uart0_pmx>;
+				pinctrl-names = "default";
+				sirf,uart-has-rtscts;
+			};
+
+			uart2: uart@18030000 {
+				status = "disabled";
+				pinctrl-0 = <&uart2_cts_pmx0
+						&uart2_rts_pmx0
+						&uart2_rxd_pmx0
+						&uart2_txd_pmx0>;
+				pinctrl-names = "default";
+			};
+
+			uart3: uart@18040000 {
+				status = "disabled";
+			};
+
+			uart5: uart@18060000 {
+				status = "disabled";
+			};
+
+			gmac: eth@180b0000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&rg_eth_mac_pmx
+					&rg_gmac_phy_intr_n_pmx
+					&rg_rgmii_mac_pmx>;
+			};
+
+			spi1: spi@18200000 {
+				status = "okay";
+				compatible = "sirf,prima2-spi-slave";
+				pinctrl-0 = <&sp1_spi_pmx>;
+				pinctrl-names = "default";
+				spiflash: mxicy@0{
+					compatible = "mxicy,mx25l6405d";
+					reg = <0>;
+					spi-max-frequency = <37500000>;
+					spi-cpha;
+					spi-cpol;
+					#address-cells = <1>;
+					#size-cells = <1>;
+					partitions@0 {
+						label = "myspiboot";
+						reg = <0x0 0x800000>;
+					};
+			       };
+			};
+
+		};
+
+		rtcm {
+			qspi: flash@188B0000 {
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&sp0_qspi_pmx>;
+				clock-rate = <20000000>;        /* 20MHz */
+			};
+			rtc-iobg@18840000 {
+				pwrc@3000 {
+					atlas7-gps {
+					   status = "okay";
+					   pinctrl-names = "default";
+					   pinctrl-0 = <&gn_trg_spi_pmx0
+						&gn_trg_pmx0>;
+					};
+				};
+			};
+		};
+
+		ipc@13240000 {
+			ns_m3_rproc@0 {
+				memory-region = <&ipc_mem0>;
+				status = "okay";
+			};
+
+			ns_m3_rproc@1 {
+				status = "disabled";
+			};
+
+			ns_kal_rproc@0 {
+				status = "disabled";
+			};
+
+			ns_kal_rproc@1 {
+				status = "disabled";
+			};
+		};
+
+		disp-iobg {
+
+			lcd0@13100000 {
+				status = "disabled";
+			};
+			vpp0@13110000 {
+				status = "disabled";
+			};
+			lcd1@13120000 {
+				status = "disabled";
+			};
+			vpp1@13130000 {
+				status = "disabled";
+			};
+			lvds@10e10000 {
+				status = "disabled";
+			};
+			g2d@17010000 {
+				status = "disabled";
+			};
+
+		};
+
+		graphics-iobg {
+			graphics@12000000 {
+				status = "disabled";
+			};
+		};
+	};
+};

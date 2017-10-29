@@ -1,0 +1,12 @@
+menu "Rpmsg drivers"
+
+# RPMSG always gets selected by whoever wants it
+config RPMSG
+	tristate
+	select VIRTIO
+	select VIRTUALIZATION
+
+config RPMSG_CDEV
+	tristate "Foryou RPMSG driver"
+	depends on RPMSG
+endmenu

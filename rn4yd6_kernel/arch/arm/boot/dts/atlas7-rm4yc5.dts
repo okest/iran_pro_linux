@@ -1,0 +1,4016 @@
+/*
+ * DTS file for CSR SiRFatlas7 SoC
+ *
+ * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "CSR SiRFatlas7 Evaluation Board";
+	compatible = "sirf,atlas7-cb", "sirf,atlas7";
+	#address-cells = <1>;
+	#size-cells = <1>;
+	interrupt-parent = <&gic>;
+
+	chosen { 
+		bootargs = "console=ttySiRF1,115200 earlyprintk"; 
+	};
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+		serial4 = &uart4;
+		serial5 = &uart5;
+		serial6 = &uart6;
+		serial9 = &usp2;
+		spi1 = &spi1;
+		spi2 = &usp1;
+		spi3 = &usp2;
+		spi4 = &usp3;
+		tunex1 = &sd5;
+		tunex2 = &sd9;
+		display0 = &lvds;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0:cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0>;
+			clocks = <&car 20>;
+			/*cpu0-supply = <&vdd_cpu>;*/
+			voltage-tolerance = <1>;
+			clock-frequency = <793000000>;
+			operating-points = <
+			/* kHz    uV */
+			793000	1265000
+			780000	1237542
+			767000	1210038
+			754000	1182534
+			702000	1155030
+			598000	1127526
+			494000	1100022
+			299000	1072518
+			195000	1045014
+			117000	1017510
+			91000	990006
+			78000	962502
+			65000	934998
+			39000	907494
+			26000	879990
+			>;
+			clock-latency = <150000>;
+			/* cooling options */
+			cooling-min-level = <0>;
+			cooling-max-level = <2>;
+			#cooling-cells = <2>; /* min followed by max */
+		};
+		cpu1:cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <1>;
+			clock-frequency = <793000000>;
+		};
+	};
+	
+	
+	memory { 
+		device_type = "memory"; 
+		reg = <0x40000000 0x20000000>; /* 512M for PXP */
+	};
+	
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/* global region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			alloc-ranges = <0x46000000 0x6000000>;
+			size = <0x6000000>;
+			alignment = <0x2000>;
+			linux,cma-default;
+		};
+
+		ipc_mem0: ns_m3_mem@45600000 {
+			compatible = "sirf,reserved-memory";
+			reg = <0x45600000 0x10000>;
+		};
+
+		ipc_mem1: ns_kal_mem@45610000 {
+			compatible = "sirf,reserved-memory";
+			reg = <0x45610000 0x10000>;
+		};
+
+		nanddisk_reserved: nanddisk@45000000 {
+			reg = <0x45000000 0x200000>;
+			no-map;
+		};
+
+		jpeg_reserved: jpeg@4c000000 {
+			reg = <0x4c000000 0x1800000>;
+			no-map;
+		};
+
+		multimedia_reserved: multimedia@4d800000 {
+			reg = <0x4d800000 0x1800000>;
+			no-map;
+		};
+
+		uboot_reserved: uboot@45800000 {
+			reg = <0x45800000 0x200000>;
+			no-map;
+		};
+
+		cm3_reserved: cm3@45400000 {
+			reg = <0x45400000 0x200000>;
+			no-map;
+		};
+
+		cm3_kas_reserved: cm3_kas@4ff00000 {
+			reg = <0x4ff00000 0x200000>;
+			no-map;
+		};
+	};
+
+	regulators {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		reg_usb0_otg_vbus: regulator@0 {
+			compatible = "regulator-fixed";
+			reg = <0>;
+			regulator-name = "usb0_otg_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			enable-active-high;
+			gpio = <&gpio_0 46 0>;
+		};
+
+		reg_usb1_otg_vbus: regulator@1 {
+			compatible = "regulator-fixed";
+			reg = <0>;
+			regulator-name = "usb1_otg_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			enable-active-high;
+			gpio = <&gpio_0 49 0>;
+		};
+	};
+
+	sound-internal-audio {
+		status = "disabled";
+		compatible = "simple-audio-card";
+		simple-audio-card,routing =
+			"Headphone Jack", "LOUT0",
+			"LIN0", "Line In Jack",
+			"LIN1", "Line In Jack",
+			"LIN2", "Line In Jack",
+			"LIN3", "Line In Jack",
+			"MICIN0", "Microphone Jack",
+			"MICIN1", "Microphone Jack";
+		simple-audio-card,widgets =
+			"Microphone", "Microphone Jack",
+			"Headphone", "Headphone Jack",
+			"Line", "Line In Jack";
+		simple-audio-card,codec {
+			sound-dai = <&atlas7_codec>;
+		};
+		simple-audio-card,cpu {
+			sound-dai = <&atlas7_iacc>;
+		};
+	};
+
+	kas-pcm-audio {
+		compatible = "csr,kas-pcm";
+		i2s-master;
+		bt-usp-port = <3>;
+	};
+
+	sound-kas-audio-card {
+		compatible = "csr,kas-audio";
+		mclk-fs = <1024>;
+	};
+
+	kalimba {
+		compatible = "csr,kalimba-dsp";
+		clocks = <&car 82>, <&car 26>, <&car 31>, <&car 74>;
+		clock-names = "kas_kas",
+			"audmscm_nocd", "gpum_nocd", "dmac2";
+		resets = <&car 82>;
+		status = "okay";
+	};
+
+	ext-amp {
+		compatible = "sirf,ext-amp";
+		status = "disabled";
+		cd-gpio = <&gpio_1 81 0>;
+	};
+
+	thermal-zones {
+		cpu_thermal: cpu_thermal {
+			polling-delay-passive = <250>; /* milliseconds */
+			polling-delay = <1000>; /* milliseconds */
+			//thermal-sensors = <&sirfsoc_sensor 0>;
+
+		trips {
+			cpu_alert0: cpu_alert {
+				temperature = <100000>; /* millicelsius */
+				hysteresis = <2000>; /* millicelsius */
+				type = "passive";
+			};
+		};
+
+		cooling-maps {
+				map0 {
+					trip = <&cpu_alert0>;
+					cooling-device = <&cpu0 0 2>;
+				};
+			};
+		};
+	};
+
+	clocks {
+		xinw {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
+			clock-output-names = "xinw";
+		};
+		xin {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+			clock-output-names = "xin";
+		};
+	};
+
+	arm-pmu {
+		compatible = "arm,cortex-a7-pmu";
+		interrupts = <0 29 4>, <0 82 4>;
+	};
+
+	bt_sco_a2dp: bt-sco-a2dp {
+		#sound-dai-cells = <0>;
+		compatible = "bt-sco-a2dp";
+		status = "disabled";
+	};
+
+	sirf-bt-sco-a2dp {
+		status = "disabled";
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,cpu {
+			sound-dai = <&usp3>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&bt_sco_a2dp>;
+			bitclock-master;
+			frame-master;
+		};
+	};
+
+	noc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x00000000 0x00000000 0x00014000>,
+		       <0x04000000 0x04000000 0x00030000>,
+		       <0x10000000 0x10000000 0xc0000000>;
+
+		gic: interrupt-controller@10301000 {
+			compatible = "arm,cortex-a9-gic";
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			reg = <0x10301000 0x1000>,
+			     <0x10302000 0x0100>;
+		}; 
+		kalimba_ipc@10C10000 {
+			compatible = "csr,kalimba-ipc";
+			reg = <0x10C10000 0x1000>,
+			    <0x13240000 0x500>;
+			interrupts = <0 124 0>;
+			status = "okay";
+		};
+
+		ipc@13240000 {
+			compatible = "sirf,atlas7-ipc", "simple-bus";
+			ranges = <0x13240000 0x13240000 0x00010000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			hwlock: hwlock@0 {
+				compatible = "sirf,hwspinlock";
+				reg = <0x13240400 0x0100>;
+				#hwlock-cells = <1>;
+				base-id = <8>;
+				num-spinlocks = <30>;
+			};
+
+			ns_m3_rproc@0 {
+				compatible = "sirf,atlas7-rproc";
+				reg = <0x13240108 0x4>,
+					<0x13240208 0x4>;
+				interrupts = <0 123 0>;
+				hwlocks = <&hwlock 0>, <&hwlock 1>;
+				firmware = "RTOSDemo.bin";
+				memory-region = <&ipc_mem0>;
+				status = "okay";
+			};
+
+			ns_m3_rproc@1 {
+				compatible = "sirf,atlas7-rproc";
+				reg = <0x1324010C 0x4>,
+					<0x1324020C 0x4>;
+				interrupts = <0 126 0>;
+				status = "disabled";
+			};
+
+			ns_kal_rproc@0 {
+				compatible = "sirf,atlas7-rproc";
+				reg = <0x13240110 0x4>,
+					<0x13240308 0x4>;
+				interrupts = <0 124 0>;
+				memory-region = <&ipc_mem1>;
+				status = "disabled";
+			};
+
+			ns_kal_rproc@1 {
+				compatible = "sirf,atlas7-rproc";
+				reg = <0x13240114 0x4>,
+					<0x1324030C 0x4>;
+				interrupts = <0 127 0>;
+				status = "disabled";
+			};
+		};
+
+		pinctrl: ioc@18880000 {
+			compatible = "sirf,atlas7-ioc";
+			reg = <0x18880000 0x1000>,
+				<0x10E40000 0x1000>;
+
+			sample1_cfg: sample1@0 { 
+				sample1 { 
+					pins = "ldd_2", "ldd_3";
+					bias-pull-up; 
+				}; 
+			}; 
+
+			sample2_cfg: sample2@0 { 
+				sample2 { 
+					pins = "gpio_4";
+					bias-pull-down; 
+				}; 
+			}; 
+			
+			sample3_cfg: sample3@0 { 
+				sample3 { 
+					pins = "coex_pio_0", "coex_pio_1";
+					bias-pull-up; 
+				}; 
+			};
+			
+			sample4_cfg: sample4@0 { 
+				sample4 { 
+					pins = "rgmii_rxd_3";
+					bias-pull-up; 
+				}; 
+			}; 
+		
+			audio_ac97_pmx: audio_ac97@0 {
+				audio_ac97 {
+					groups = "audio_ac97_grp";
+					function = "audio_ac97";
+				};
+			};
+
+			audio_digmic_pmx0: audio_digmic@0 {
+				audio_digmic_0 {
+					groups = "audio_digmic_grp0";
+					function = "audio_digmic_m0";
+				};
+			};
+
+			audio_digmic_pmx1: audio_digmic@1 {
+				audio_digmic_1 {
+					groups = "audio_digmic_grp1";
+					function = "audio_digmic_m1";
+				};
+			};
+
+			audio_digmic_pmx2: audio_digmic@2 {
+				audio_digmic_2 {
+					groups = "audio_digmic_grp2";
+					function = "audio_digmic_m2";
+				};
+			};
+
+			audio_func_dbg_pmx: audio_func_dbg@0 {
+				audio_func_dbg {
+					groups = "audio_func_dbg_grp";
+					function = "audio_func_dbg";
+				};
+			};
+
+			audio_i2s_pmx: audio_i2s@0 {
+				audio_i2s {
+					groups = "audio_i2s_grp";
+					function = "audio_i2s";
+				};
+			};
+
+			audio_i2s_2ch_pmx: audio_i2s_2ch@0 {
+				audio_i2s_2ch {
+					groups = "audio_i2s_2ch_grp";
+					function = "audio_i2s_2ch";
+				};
+			};
+
+			audio_i2s_extclk_pmx: audio_i2s_extclk@0 {
+				audio_i2s_extclk {
+					groups = "audio_i2s_extclk_grp";
+					function = "audio_i2s_extclk";
+				};
+			};
+
+			audio_spdif_out_pmx0: audio_spdif_out@0 {
+				audio_spdif_out_0 {
+					groups = "audio_spdif_out_grp0";
+					function = "audio_spdif_out_m0";
+				};
+			};
+
+			audio_spdif_out_pmx1: audio_spdif_out@1 {
+				audio_spdif_out_1 {
+					groups = "audio_spdif_out_grp1";
+					function = "audio_spdif_out_m1";
+				};
+			};
+
+			audio_spdif_out_pmx2: audio_spdif_out@2 {
+				audio_spdif_out_2 {
+					groups = "audio_spdif_out_grp2";
+					function = "audio_spdif_out_m2";
+				};
+			};
+
+			audio_uart0_basic_pmx: audio_uart0_basic@0 {
+				audio_uart0_basic {
+					groups = "audio_uart0_basic_grp";
+					function = "audio_uart0_basic";
+				};
+			};
+
+			audio_uart0_urfs_pmx0: audio_uart0_urfs@0 {
+				audio_uart0_urfs_0 {
+					groups = "audio_uart0_urfs_grp0";
+					function = "audio_uart0_urfs_m0";
+				};
+			};
+
+			audio_uart0_urfs_pmx1: audio_uart0_urfs@1 {
+				audio_uart0_urfs_1 {
+					groups = "audio_uart0_urfs_grp1";
+					function = "audio_uart0_urfs_m1";
+				};
+			};
+
+			audio_uart0_urfs_pmx2: audio_uart0_urfs@2 {
+				audio_uart0_urfs_2 {
+					groups = "audio_uart0_urfs_grp2";
+					function = "audio_uart0_urfs_m2";
+				};
+			};
+
+			audio_uart0_urfs_pmx3: audio_uart0_urfs@3 {
+				audio_uart0_urfs_3 {
+					groups = "audio_uart0_urfs_grp3";
+					function = "audio_uart0_urfs_m3";
+				};
+			};
+
+			audio_uart1_basic_pmx: audio_uart1_basic@0 {
+				audio_uart1_basic {
+					groups = "audio_uart1_basic_grp";
+					function = "audio_uart1_basic";
+				};
+			};
+
+			audio_uart1_urfs_pmx0: audio_uart1_urfs@0 {
+				audio_uart1_urfs_0 {
+					groups = "audio_uart1_urfs_grp0";
+					function = "audio_uart1_urfs_m0";
+				};
+			};
+
+			audio_uart1_urfs_pmx1: audio_uart1_urfs@1 {
+				audio_uart1_urfs_1 {
+					groups = "audio_uart1_urfs_grp1";
+					function = "audio_uart1_urfs_m1";
+				};
+			};
+
+			audio_uart1_urfs_pmx2: audio_uart1_urfs@2 {
+				audio_uart1_urfs_2 {
+					groups = "audio_uart1_urfs_grp2";
+					function = "audio_uart1_urfs_m2";
+				};
+			};
+
+			audio_uart2_urfs_pmx0: audio_uart2_urfs@0 {
+				audio_uart2_urfs_0 {
+					groups = "audio_uart2_urfs_grp0";
+					function = "audio_uart2_urfs_m0";
+				};
+			};
+
+			audio_uart2_urfs_pmx1: audio_uart2_urfs@1 {
+				audio_uart2_urfs_1 {
+					groups = "audio_uart2_urfs_grp1";
+					function = "audio_uart2_urfs_m1";
+				};
+			};
+
+			audio_uart2_urfs_pmx2: audio_uart2_urfs@2 {
+				audio_uart2_urfs_2 {
+					groups = "audio_uart2_urfs_grp2";
+					function = "audio_uart2_urfs_m2";
+				};
+			};
+
+			audio_uart2_urxd_pmx0: audio_uart2_urxd@0 {
+				audio_uart2_urxd_0 {
+					groups = "audio_uart2_urxd_grp0";
+					function = "audio_uart2_urxd_m0";
+				};
+			};
+
+			audio_uart2_urxd_pmx1: audio_uart2_urxd@1 {
+				audio_uart2_urxd_1 {
+					groups = "audio_uart2_urxd_grp1";
+					function = "audio_uart2_urxd_m1";
+				};
+			};
+
+			audio_uart2_urxd_pmx2: audio_uart2_urxd@2 {
+				audio_uart2_urxd_2 {
+					groups = "audio_uart2_urxd_grp2";
+					function = "audio_uart2_urxd_m2";
+				};
+			};
+
+			audio_uart2_usclk_pmx0: audio_uart2_usclk@0 {
+				audio_uart2_usclk_0 {
+					groups = "audio_uart2_usclk_grp0";
+					function = "audio_uart2_usclk_m0";
+				};
+			};
+
+			audio_uart2_usclk_pmx1: audio_uart2_usclk@1 {
+				audio_uart2_usclk_1 {
+					groups = "audio_uart2_usclk_grp1";
+					function = "audio_uart2_usclk_m1";
+				};
+			};
+
+			audio_uart2_usclk_pmx2: audio_uart2_usclk@2 {
+				audio_uart2_usclk_2 {
+					groups = "audio_uart2_usclk_grp2";
+					function = "audio_uart2_usclk_m2";
+				};
+			};
+
+			audio_uart2_utfs_pmx0: audio_uart2_utfs@0 {
+				audio_uart2_utfs_0 {
+					groups = "audio_uart2_utfs_grp0";
+					function = "audio_uart2_utfs_m0";
+				};
+			};
+
+			audio_uart2_utfs_pmx1: audio_uart2_utfs@1 {
+				audio_uart2_utfs_1 {
+					groups = "audio_uart2_utfs_grp1";
+					function = "audio_uart2_utfs_m1";
+				};
+			};
+
+			audio_uart2_utfs_pmx2: audio_uart2_utfs@2 {
+				audio_uart2_utfs_2 {
+					groups = "audio_uart2_utfs_grp2";
+					function = "audio_uart2_utfs_m2";
+				};
+			};
+
+			audio_uart2_utxd_pmx0: audio_uart2_utxd@0 {
+				audio_uart2_utxd_0 {
+					groups = "audio_uart2_utxd_grp0";
+					function = "audio_uart2_utxd_m0";
+				};
+			};
+
+			audio_uart2_utxd_pmx1: audio_uart2_utxd@1 {
+				audio_uart2_utxd_1 {
+					groups = "audio_uart2_utxd_grp1";
+					function = "audio_uart2_utxd_m1";
+				};
+			};
+
+			audio_uart2_utxd_pmx2: audio_uart2_utxd@2 {
+				audio_uart2_utxd_2 {
+					groups = "audio_uart2_utxd_grp2";
+					function = "audio_uart2_utxd_m2";
+				};
+			};
+
+			c_can_trnsvr_en_pmx0: c_can_trnsvr_en@0 {
+				c_can_trnsvr_en_0 {
+					groups = "c_can_trnsvr_en_grp0";
+					function = "c_can_trnsvr_en_m0";
+				};
+			};
+
+			c_can_trnsvr_en_pmx1: c_can_trnsvr_en@1 {
+				c_can_trnsvr_en_1 {
+					groups = "c_can_trnsvr_en_grp1";
+					function = "c_can_trnsvr_en_m1";
+				};
+			};
+
+			c_can_trnsvr_intr_pmx: c_can_trnsvr_intr@0 {
+				c_can_trnsvr_intr {
+					groups = "c_can_trnsvr_intr_grp";
+					function = "c_can_trnsvr_intr";
+				};
+			};
+
+			c_can_trnsvr_stb_n_pmx: c_can_trnsvr_stb_n@0 {
+				c_can_trnsvr_stb_n {
+					groups = "c_can_trnsvr_stb_n_grp";
+					function = "c_can_trnsvr_stb_n";
+				};
+			};
+
+			c0_can_rxd_trnsv0_pmx: c0_can_rxd_trnsv0@0 {
+				c0_can_rxd_trnsv0 {
+					groups = "c0_can_rxd_trnsv0_grp";
+					function = "c0_can_rxd_trnsv0";
+				};
+			};
+
+			c0_can_rxd_trnsv1_pmx: c0_can_rxd_trnsv1@0 {
+				c0_can_rxd_trnsv1 {
+					groups = "c0_can_rxd_trnsv1_grp";
+					function = "c0_can_rxd_trnsv1";
+				};
+			};
+
+			c0_can_txd_trnsv0_pmx: c0_can_txd_trnsv0@0 {
+				c0_can_txd_trnsv0 {
+					groups = "c0_can_txd_trnsv0_grp";
+					function = "c0_can_txd_trnsv0";
+				};
+			};
+
+			c0_can_txd_trnsv1_pmx: c0_can_txd_trnsv1@0 {
+				c0_can_txd_trnsv1 {
+					groups = "c0_can_txd_trnsv1_grp";
+					function = "c0_can_txd_trnsv1";
+				};
+			};
+
+			c1_can_rxd_pmx0: c1_can_rxd@0 {
+				c1_can_rxd_0 {
+					groups = "c1_can_rxd_grp0";
+					function = "c1_can_rxd_m0";
+				};
+			};
+
+			c1_can_rxd_pmx1: c1_can_rxd@1 {
+				c1_can_rxd_1 {
+					groups = "c1_can_rxd_grp1";
+					function = "c1_can_rxd_m1";
+				};
+			};
+
+			c1_can_rxd_pmx2: c1_can_rxd@2 {
+				c1_can_rxd_2 {
+					groups = "c1_can_rxd_grp2";
+					function = "c1_can_rxd_m2";
+				};
+			};
+
+			c1_can_rxd_pmx3: c1_can_rxd@3 {
+				c1_can_rxd_3 {
+					groups = "c1_can_rxd_grp3";
+					function = "c1_can_rxd_m3";
+				};
+			};
+
+			c1_can_txd_pmx0: c1_can_txd@0 {
+				c1_can_txd_0 {
+					groups = "c1_can_txd_grp0";
+					function = "c1_can_txd_m0";
+				};
+			};
+
+			c1_can_txd_pmx1: c1_can_txd@1 {
+				c1_can_txd_1 {
+					groups = "c1_can_txd_grp1";
+					function = "c1_can_txd_m1";
+				};
+			};
+
+			c1_can_txd_pmx2: c1_can_txd@2 {
+				c1_can_txd_2 {
+					groups = "c1_can_txd_grp2";
+					function = "c1_can_txd_m2";
+				};
+			};
+
+			c1_can_txd_pmx3: c1_can_txd@3 {
+				c1_can_txd_3 {
+					groups = "c1_can_txd_grp3";
+					function = "c1_can_txd_m3";
+				};
+			};
+
+			ca_audio_lpc_pmx: ca_audio_lpc@0 {
+				ca_audio_lpc {
+					groups = "ca_audio_lpc_grp";
+					function = "ca_audio_lpc";
+				};
+			};
+
+			ca_bt_lpc_pmx: ca_bt_lpc@0 {
+				ca_bt_lpc {
+					groups = "ca_bt_lpc_grp";
+					function = "ca_bt_lpc";
+				};
+			};
+
+			ca_coex_pmx: ca_coex@0 {
+				ca_coex {
+					groups = "ca_coex_grp";
+					function = "ca_coex";
+				};
+			};
+
+			ca_curator_lpc_pmx: ca_curator_lpc@0 {
+				ca_curator_lpc {
+					groups = "ca_curator_lpc_grp";
+					function = "ca_curator_lpc";
+				};
+			};
+
+			ca_pcm_debug_pmx: ca_pcm_debug@0 {
+				ca_pcm_debug {
+					groups = "ca_pcm_debug_grp";
+					function = "ca_pcm_debug";
+				};
+			};
+
+			ca_pio_pmx: ca_pio@0 {
+				ca_pio {
+					groups = "ca_pio_grp";
+					function = "ca_pio";
+				};
+			};
+
+			ca_sdio_debug_pmx: ca_sdio_debug@0 {
+				ca_sdio_debug {
+					groups = "ca_sdio_debug_grp";
+					function = "ca_sdio_debug";
+				};
+			};
+
+			ca_spi_pmx: ca_spi@0 {
+				ca_spi {
+					groups = "ca_spi_grp";
+					function = "ca_spi";
+				};
+			};
+
+			ca_trb_pmx: ca_trb@0 {
+				ca_trb {
+					groups = "ca_trb_grp";
+					function = "ca_trb";
+				};
+			};
+
+			ca_uart_debug_pmx: ca_uart_debug@0 {
+				ca_uart_debug {
+					groups = "ca_uart_debug_grp";
+					function = "ca_uart_debug";
+				};
+			};
+
+			clkc_pmx0: clkc@0 {
+				clkc_0 {
+					groups = "clkc_grp0";
+					function = "clkc_m0";
+				};
+			};
+
+			clkc_pmx1: clkc@1 {
+				clkc_1 {
+					groups = "clkc_grp1";
+					function = "clkc_m1";
+				};
+			};
+
+			gn_gnss_i2c_pmx: gn_gnss_i2c@0 {
+				gn_gnss_i2c {
+					groups = "gn_gnss_i2c_grp";
+					function = "gn_gnss_i2c";
+				};
+			};
+
+			gn_gnss_uart_nopause_pmx: gn_gnss_uart_nopause@0 {
+				gn_gnss_uart_nopause {
+					groups = "gn_gnss_uart_nopause_grp";
+					function = "gn_gnss_uart_nopause";
+				};
+			};
+
+			gn_gnss_uart_pmx: gn_gnss_uart@0 {
+				gn_gnss_uart {
+					groups = "gn_gnss_uart_grp";
+					function = "gn_gnss_uart";
+				};
+			};
+
+			gn_trg_spi_pmx0: gn_trg_spi@0 {
+				gn_trg_spi_0 {
+					groups = "gn_trg_spi_grp0";
+					function = "gn_trg_spi_m0";
+				};
+			};
+
+			gn_trg_spi_pmx1: gn_trg_spi@1 {
+				gn_trg_spi_1 {
+					groups = "gn_trg_spi_grp1";
+					function = "gn_trg_spi_m1";
+				};
+			};
+
+			cvbs_dbg_pmx: cvbs_dbg@0 {
+				cvbs_dbg {
+					groups = "cvbs_dbg_grp";
+					function = "cvbs_dbg";
+				};
+			};
+
+			cvbs_dbg_test_pmx0: cvbs_dbg_test@0 {
+				cvbs_dbg_test_0 {
+					groups = "cvbs_dbg_test_grp0";
+					function = "cvbs_dbg_test_m0";
+				};
+			};
+
+			cvbs_dbg_test_pmx1: cvbs_dbg_test@1 {
+				cvbs_dbg_test_1 {
+					groups = "cvbs_dbg_test_grp1";
+					function = "cvbs_dbg_test_m1";
+				};
+			};
+
+			cvbs_dbg_test_pmx2: cvbs_dbg_test@2 {
+				cvbs_dbg_test_2 {
+					groups = "cvbs_dbg_test_grp2";
+					function = "cvbs_dbg_test_m2";
+				};
+			};
+
+			cvbs_dbg_test_pmx3: cvbs_dbg_test@3 {
+				cvbs_dbg_test_3 {
+					groups = "cvbs_dbg_test_grp3";
+					function = "cvbs_dbg_test_m3";
+				};
+			};
+
+			cvbs_dbg_test_pmx4: cvbs_dbg_test@4 {
+				cvbs_dbg_test_4 {
+					groups = "cvbs_dbg_test_grp4";
+					function = "cvbs_dbg_test_m4";
+				};
+			};
+
+			cvbs_dbg_test_pmx5: cvbs_dbg_test@5 {
+				cvbs_dbg_test_5 {
+					groups = "cvbs_dbg_test_grp5";
+					function = "cvbs_dbg_test_m5";
+				};
+			};
+
+			cvbs_dbg_test_pmx6: cvbs_dbg_test@6 {
+				cvbs_dbg_test_6 {
+					groups = "cvbs_dbg_test_grp6";
+					function = "cvbs_dbg_test_m6";
+				};
+			};
+
+			cvbs_dbg_test_pmx7: cvbs_dbg_test@7 {
+				cvbs_dbg_test_7 {
+					groups = "cvbs_dbg_test_grp7";
+					function = "cvbs_dbg_test_m7";
+				};
+			};
+
+			cvbs_dbg_test_pmx8: cvbs_dbg_test@8 {
+				cvbs_dbg_test_8 {
+					groups = "cvbs_dbg_test_grp8";
+					function = "cvbs_dbg_test_m8";
+				};
+			};
+
+			cvbs_dbg_test_pmx9: cvbs_dbg_test@9 {
+				cvbs_dbg_test_9 {
+					groups = "cvbs_dbg_test_grp9";
+					function = "cvbs_dbg_test_m9";
+				};
+			};
+
+			cvbs_dbg_test_pmx10: cvbs_dbg_test@10 {
+				cvbs_dbg_test_10 {
+					groups = "cvbs_dbg_test_grp10";
+					function = "cvbs_dbg_test_m10";
+				};
+			};
+
+			cvbs_dbg_test_pmx11: cvbs_dbg_test@11 {
+				cvbs_dbg_test_11 {
+					groups = "cvbs_dbg_test_grp11";
+					function = "cvbs_dbg_test_m11";
+				};
+			};
+
+			cvbs_dbg_test_pmx12: cvbs_dbg_test@12 {
+				cvbs_dbg_test_12 {
+					groups = "cvbs_dbg_test_grp12";
+					function = "cvbs_dbg_test_m12";
+				};
+			};
+
+			cvbs_dbg_test_pmx13: cvbs_dbg_test@13 {
+				cvbs_dbg_test_13 {
+					groups = "cvbs_dbg_test_grp13";
+					function = "cvbs_dbg_test_m13";
+				};
+			};
+
+			cvbs_dbg_test_pmx14: cvbs_dbg_test@14 {
+				cvbs_dbg_test_14 {
+					groups = "cvbs_dbg_test_grp14";
+					function = "cvbs_dbg_test_m14";
+				};
+			};
+
+			cvbs_dbg_test_pmx15: cvbs_dbg_test@15 {
+				cvbs_dbg_test_15 {
+					groups = "cvbs_dbg_test_grp15";
+					function = "cvbs_dbg_test_m15";
+				};
+			};
+
+			gn_gnss_power_pmx: gn_gnss_power@0 {
+				gn_gnss_power {
+					groups = "gn_gnss_power_grp";
+					function = "gn_gnss_power";
+				};
+			};
+
+			gn_gnss_sw_status_pmx: gn_gnss_sw_status@0 {
+				gn_gnss_sw_status {
+					groups = "gn_gnss_sw_status_grp";
+					function = "gn_gnss_sw_status";
+				};
+			};
+
+			gn_gnss_eclk_pmx: gn_gnss_eclk@0 {
+				gn_gnss_eclk {
+					groups = "gn_gnss_eclk_grp";
+					function = "gn_gnss_eclk";
+				};
+			};
+
+			gn_gnss_irq1_pmx0: gn_gnss_irq1@0 {
+				gn_gnss_irq1_0 {
+					groups = "gn_gnss_irq1_grp0";
+					function = "gn_gnss_irq1_m0";
+				};
+			};
+
+			gn_gnss_irq2_pmx0: gn_gnss_irq2@0 {
+				gn_gnss_irq2_0 {
+					groups = "gn_gnss_irq2_grp0";
+					function = "gn_gnss_irq2_m0";
+				};
+			};
+
+			gn_gnss_tm_pmx: gn_gnss_tm@0 {
+				gn_gnss_tm {
+					groups = "gn_gnss_tm_grp";
+					function = "gn_gnss_tm";
+				};
+			};
+
+			gn_gnss_tsync_pmx: gn_gnss_tsync@0 {
+				gn_gnss_tsync {
+					groups = "gn_gnss_tsync_grp";
+					function = "gn_gnss_tsync";
+				};
+			};
+
+			gn_io_gnsssys_sw_cfg_pmx: gn_io_gnsssys_sw_cfg@0 {
+				gn_io_gnsssys_sw_cfg {
+					groups = "gn_io_gnsssys_sw_cfg_grp";
+					function = "gn_io_gnsssys_sw_cfg";
+				};
+			};
+
+			gn_trg_pmx0: gn_trg@0 {
+				gn_trg_0 {
+					groups = "gn_trg_grp0";
+					function = "gn_trg_m0";
+				};
+			};
+
+			gn_trg_pmx1: gn_trg@1 {
+				gn_trg_1 {
+					groups = "gn_trg_grp1";
+					function = "gn_trg_m1";
+				};
+			};
+
+			gn_trg_shutdown_pmx0: gn_trg_shutdown@0 {
+				gn_trg_shutdown_0 {
+					groups = "gn_trg_shutdown_grp0";
+					function = "gn_trg_shutdown_m0";
+				};
+			};
+
+			gn_trg_shutdown_pmx1: gn_trg_shutdown@1 {
+				gn_trg_shutdown_1 {
+					groups = "gn_trg_shutdown_grp1";
+					function = "gn_trg_shutdown_m1";
+				};
+			};
+
+			gn_trg_shutdown_pmx2: gn_trg_shutdown@2 {
+				gn_trg_shutdown_2 {
+					groups = "gn_trg_shutdown_grp2";
+					function = "gn_trg_shutdown_m2";
+				};
+			};
+
+			gn_trg_shutdown_pmx3: gn_trg_shutdown@3 {
+				gn_trg_shutdown_3 {
+					groups = "gn_trg_shutdown_grp3";
+					function = "gn_trg_shutdown_m3";
+				};
+			};
+
+			i2c0_pmx: i2c0@0 {
+				i2c0 {
+					groups = "i2c0_grp";
+					function = "i2c0";
+				};
+			};
+
+			i2c1_pmx: i2c1@0 {
+				i2c1 {
+					groups = "i2c1_grp";
+					function = "i2c1";
+				};
+			};
+
+			i2s0_pmx: i2s0@0 {
+				i2s0 {
+					groups = "i2s0_grp";
+					function = "i2s0";
+				};
+			};
+
+			i2s1_basic_pmx: i2s1_basic@0 {
+				i2s1_basic {
+					groups = "i2s1_basic_grp";
+					function = "i2s1_basic";
+				};
+			};
+
+			i2s1_rxd0_pmx0: i2s1_rxd0@0 {
+				i2s1_rxd0_0 {
+					groups = "i2s1_rxd0_grp0";
+					function = "i2s1_rxd0_m0";
+				};
+			};
+
+			i2s1_rxd0_pmx1: i2s1_rxd0@1 {
+				i2s1_rxd0_1 {
+					groups = "i2s1_rxd0_grp1";
+					function = "i2s1_rxd0_m1";
+				};
+			};
+
+			i2s1_rxd0_pmx2: i2s1_rxd0@2 {
+				i2s1_rxd0_2 {
+					groups = "i2s1_rxd0_grp2";
+					function = "i2s1_rxd0_m2";
+				};
+			};
+
+			i2s1_rxd0_pmx3: i2s1_rxd0@3 {
+				i2s1_rxd0_3 {
+					groups = "i2s1_rxd0_grp3";
+					function = "i2s1_rxd0_m3";
+				};
+			};
+
+			i2s1_rxd0_pmx4: i2s1_rxd0@4 {
+				i2s1_rxd0_4 {
+					groups = "i2s1_rxd0_grp4";
+					function = "i2s1_rxd0_m4";
+				};
+			};
+
+			i2s1_rxd1_pmx0: i2s1_rxd1@0 {
+				i2s1_rxd1_0 {
+					groups = "i2s1_rxd1_grp0";
+					function = "i2s1_rxd1_m0";
+				};
+			};
+
+			i2s1_rxd1_pmx1: i2s1_rxd1@1 {
+				i2s1_rxd1_1 {
+					groups = "i2s1_rxd1_grp1";
+					function = "i2s1_rxd1_m1";
+				};
+			};
+
+			i2s1_rxd1_pmx2: i2s1_rxd1@2 {
+				i2s1_rxd1_2 {
+					groups = "i2s1_rxd1_grp2";
+					function = "i2s1_rxd1_m2";
+				};
+			};
+
+			i2s1_rxd1_pmx3: i2s1_rxd1@3 {
+				i2s1_rxd1_3 {
+					groups = "i2s1_rxd1_grp3";
+					function = "i2s1_rxd1_m3";
+				};
+			};
+
+			i2s1_rxd1_pmx4: i2s1_rxd1@4 {
+				i2s1_rxd1_4 {
+					groups = "i2s1_rxd1_grp4";
+					function = "i2s1_rxd1_m4";
+				};
+			};
+
+			jtag_jt_dbg_nsrst_pmx: jtag_jt_dbg_nsrst@0 {
+				jtag_jt_dbg_nsrst {
+					groups = "jtag_jt_dbg_nsrst_grp";
+					function = "jtag_jt_dbg_nsrst";
+				};
+			};
+
+			jtag_ntrst_pmx0: jtag_ntrst@0 {
+				jtag_ntrst_0 {
+					groups = "jtag_ntrst_grp0";
+					function = "jtag_ntrst_m0";
+				};
+			};
+
+			jtag_ntrst_pmx1: jtag_ntrst@1 {
+				jtag_ntrst_1 {
+					groups = "jtag_ntrst_grp1";
+					function = "jtag_ntrst_m1";
+				};
+			};
+
+			jtag_swdiotms_pmx0: jtag_swdiotms@0 {
+				jtag_swdiotms_0 {
+					groups = "jtag_swdiotms_grp0";
+					function = "jtag_swdiotms_m0";
+				};
+			};
+
+			jtag_swdiotms_pmx1: jtag_swdiotms@1 {
+				jtag_swdiotms_1 {
+					groups = "jtag_swdiotms_grp1";
+					function = "jtag_swdiotms_m1";
+				};
+			};
+
+			jtag_tck_pmx0: jtag_tck@0 {
+				jtag_tck_0 {
+					groups = "jtag_tck_grp0";
+					function = "jtag_tck_m0";
+				};
+			};
+
+			jtag_tck_pmx1: jtag_tck@1 {
+				jtag_tck_1 {
+					groups = "jtag_tck_grp1";
+					function = "jtag_tck_m1";
+				};
+			};
+
+			jtag_tdi_pmx0: jtag_tdi@0 {
+				jtag_tdi_0 {
+					groups = "jtag_tdi_grp0";
+					function = "jtag_tdi_m0";
+				};
+			};
+
+			jtag_tdi_pmx1: jtag_tdi@1 {
+				jtag_tdi_1 {
+					groups = "jtag_tdi_grp1";
+					function = "jtag_tdi_m1";
+				};
+			};
+
+			jtag_tdo_pmx0: jtag_tdo@0 {
+				jtag_tdo_0 {
+					groups = "jtag_tdo_grp0";
+					function = "jtag_tdo_m0";
+				};
+			};
+
+			jtag_tdo_pmx1: jtag_tdo@1 {
+				jtag_tdo_1 {
+					groups = "jtag_tdo_grp1";
+					function = "jtag_tdo_m1";
+				};
+			};
+
+			ks_kas_spi_pmx0: ks_kas_spi@0 {
+				ks_kas_spi_0 {
+					groups = "ks_kas_spi_grp0";
+					function = "ks_kas_spi_m0";
+				};
+			};
+
+			ld_ldd_pmx: ld_ldd@0 {
+				ld_ldd {
+					groups = "ld_ldd_grp";
+					function = "ld_ldd";
+				};
+			};
+
+			ld_ldd_16bit_pmx: ld_ldd_16bit@0 {
+				ld_ldd_16bit {
+					groups = "ld_ldd_16bit_grp";
+					function = "ld_ldd_16bit";
+				};
+			};
+
+			ld_ldd_fck_pmx: ld_ldd_fck@0 {
+				ld_ldd_fck {
+					groups = "ld_ldd_fck_grp";
+					function = "ld_ldd_fck";
+				};
+			};
+
+			ld_ldd_lck_pmx: ld_ldd_lck@0 {
+				ld_ldd_lck {
+					groups = "ld_ldd_lck_grp";
+					function = "ld_ldd_lck";
+				};
+			};
+
+			lr_lcdrom_pmx: lr_lcdrom@0 {
+				lr_lcdrom {
+					groups = "lr_lcdrom_grp";
+					function = "lr_lcdrom";
+				};
+			};
+
+			lvds_analog_pmx: lvds_analog@0 {
+				lvds_analog {
+					groups = "lvds_analog_grp";
+					function = "lvds_analog";
+				};
+			};
+
+			nd_df_basic_pmx: nd_df_basic@0 {
+				nd_df_basic {
+					groups = "nd_df_basic_grp";
+					function = "nd_df_basic";
+				};
+			};
+
+			nd_df_wp_pmx: nd_df_wp@0 {
+				nd_df_wp {
+					groups = "nd_df_wp_grp";
+					function = "nd_df_wp";
+				};
+			};
+
+			nd_df_cs_pmx: nd_df_cs@0 {
+				nd_df_cs {
+					groups = "nd_df_cs_grp";
+					function = "nd_df_cs";
+				};
+			};
+
+			ps_pmx: ps@0 {
+				ps {
+					groups = "ps_grp";
+					function = "ps";
+				};
+			};
+
+			ps_no_dir_pmx: ps_no_dir@0 {
+				ps_no_dir {
+					groups = "ps_no_dir_grp";
+					function = "ps_no_dir";
+				};
+			};
+
+			pwc_core_on_pmx: pwc_core_on@0 {
+				pwc_core_on {
+					groups = "pwc_core_on_grp";
+					function = "pwc_core_on";
+				};
+			};
+
+			pwc_ext_on_pmx: pwc_ext_on@0 {
+				pwc_ext_on {
+					groups = "pwc_ext_on_grp";
+					function = "pwc_ext_on";
+				};
+			};
+
+			pwc_gpio3_clk_pmx: pwc_gpio3_clk@0 {
+				pwc_gpio3_clk {
+					groups = "pwc_gpio3_clk_grp";
+					function = "pwc_gpio3_clk";
+				};
+			};
+
+			pwc_io_on_pmx: pwc_io_on@0 {
+				pwc_io_on {
+					groups = "pwc_io_on_grp";
+					function = "pwc_io_on";
+				};
+			};
+
+			pwc_lowbatt_b_pmx0: pwc_lowbatt_b@0 {
+				pwc_lowbatt_b_0 {
+					groups = "pwc_lowbatt_b_grp0";
+					function = "pwc_lowbatt_b_m0";
+				};
+			};
+
+			pwc_mem_on_pmx: pwc_mem_on@0 {
+				pwc_mem_on {
+					groups = "pwc_mem_on_grp";
+					function = "pwc_mem_on";
+				};
+			};
+
+			pwc_on_key_b_pmx0: pwc_on_key_b@0 {
+				pwc_on_key_b_0 {
+					groups = "pwc_on_key_b_grp0";
+					function = "pwc_on_key_b_m0";
+				};
+			};
+
+			pwc_wakeup_src0_pmx: pwc_wakeup_src0@0 {
+				pwc_wakeup_src0 {
+					groups = "pwc_wakeup_src0_grp";
+					function = "pwc_wakeup_src0";
+				};
+			};
+
+			pwc_wakeup_src1_pmx: pwc_wakeup_src1@0 {
+				pwc_wakeup_src1 {
+					groups = "pwc_wakeup_src1_grp";
+					function = "pwc_wakeup_src1";
+				};
+			};
+
+			pwc_wakeup_src2_pmx: pwc_wakeup_src2@0 {
+				pwc_wakeup_src2 {
+					groups = "pwc_wakeup_src2_grp";
+					function = "pwc_wakeup_src2";
+				};
+			};
+
+			pwc_wakeup_src3_pmx: pwc_wakeup_src3@0 {
+				pwc_wakeup_src3 {
+					groups = "pwc_wakeup_src3_grp";
+					function = "pwc_wakeup_src3";
+				};
+			};
+
+			pw_cko0_pmx0: pw_cko0@0 {
+				pw_cko0_0 {
+					groups = "pw_cko0_grp0";
+					function = "pw_cko0_m0";
+				};
+			};
+
+			pw_cko0_pmx1: pw_cko0@1 {
+				pw_cko0_1 {
+					groups = "pw_cko0_grp1";
+					function = "pw_cko0_m1";
+				};
+			};
+
+			pw_cko0_pmx2: pw_cko0@2 {
+				pw_cko0_2 {
+					groups = "pw_cko0_grp2";
+					function = "pw_cko0_m2";
+				};
+			};
+
+			pw_cko0_pmx3: pw_cko0@3 {
+				pw_cko0_3 {
+					groups = "pw_cko0_grp3";
+					function = "pw_cko0_m3";
+				};
+			};
+
+			pw_cko1_pmx0: pw_cko1@0 {
+				pw_cko1_0 {
+					groups = "pw_cko1_grp0";
+					function = "pw_cko1_m0";
+				};
+			};
+
+			pw_cko1_pmx1: pw_cko1@1 {
+				pw_cko1_1 {
+					groups = "pw_cko1_grp1";
+					function = "pw_cko1_m1";
+				};
+			};
+
+			pw_cko1_pmx2: pw_cko1@2 {
+				pw_cko1_2 {
+					groups = "pw_cko1_grp2";
+					function = "pw_cko1_m2";
+				};
+			};
+
+			pw_i2s01_clk_pmx0: pw_i2s01_clk@0 {
+				pw_i2s01_clk_0 {
+					groups = "pw_i2s01_clk_grp0";
+					function = "pw_i2s01_clk_m0";
+				};
+			};
+
+			pw_i2s01_clk_pmx1: pw_i2s01_clk@1 {
+				pw_i2s01_clk_1 {
+					groups = "pw_i2s01_clk_grp1";
+					function = "pw_i2s01_clk_m1";
+				};
+			};
+
+			pw_i2s01_clk_pmx2: pw_i2s01_clk@2 {
+				pw_i2s01_clk_2 {
+					groups = "pw_i2s01_clk_grp2";
+					function = "pw_i2s01_clk_m2";
+				};
+			};
+
+			pw_pwm0_pmx0: pw_pwm0@0 {
+				pw_pwm0_0 {
+					groups = "pw_pwm0_grp0";
+					function = "pw_pwm0_m0";
+				};
+			};
+
+			pw_pwm0_pmx1: pw_pwm0@1 {
+				pw_pwm0_1 {
+					groups = "pw_pwm0_grp1";
+					function = "pw_pwm0_m1";
+				};
+			};
+
+			pw_pwm1_pmx0: pw_pwm1@0 {
+				pw_pwm1_0 {
+					groups = "pw_pwm1_grp0";
+					function = "pw_pwm1_m0";
+				};
+			};
+
+			pw_pwm1_pmx1: pw_pwm1@1 {
+				pw_pwm1_1 {
+					groups = "pw_pwm1_grp1";
+					function = "pw_pwm1_m1";
+				};
+			};
+
+			pw_pwm1_pmx2: pw_pwm1@2 {
+				pw_pwm1_2 {
+					groups = "pw_pwm1_grp2";
+					function = "pw_pwm1_m2";
+				};
+			};
+
+			pw_pwm2_pmx0: pw_pwm2@0 {
+				pw_pwm2_0 {
+					groups = "pw_pwm2_grp0";
+					function = "pw_pwm2_m0";
+				};
+			};
+
+			pw_pwm2_pmx1: pw_pwm2@1 {
+				pw_pwm2_1 {
+					groups = "pw_pwm2_grp1";
+					function = "pw_pwm2_m1";
+				};
+			};
+
+			pw_pwm2_pmx2: pw_pwm2@2 {
+				pw_pwm2_2 {
+					groups = "pw_pwm2_grp2";
+					function = "pw_pwm2_m2";
+				};
+			};
+
+			pw_pwm3_pmx0: pw_pwm3@0 {
+				pw_pwm3_0 {
+					groups = "pw_pwm3_grp0";
+					function = "pw_pwm3_m0";
+				};
+			};
+
+			pw_pwm3_pmx1: pw_pwm3@1 {
+				pw_pwm3_1 {
+					groups = "pw_pwm3_grp1";
+					function = "pw_pwm3_m1";
+				};
+			};
+
+			pw_pwm_cpu_vol_pmx0: pw_pwm_cpu_vol@0 {
+				pw_pwm_cpu_vol_0 {
+					groups = "pw_pwm_cpu_vol_grp0";
+					function = "pw_pwm_cpu_vol_m0";
+				};
+			};
+
+			pw_pwm_cpu_vol_pmx1: pw_pwm_cpu_vol@1 {
+				pw_pwm_cpu_vol_1 {
+					groups = "pw_pwm_cpu_vol_grp1";
+					function = "pw_pwm_cpu_vol_m1";
+				};
+			};
+
+			pw_pwm_cpu_vol_pmx2: pw_pwm_cpu_vol@2 {
+				pw_pwm_cpu_vol_2 {
+					groups = "pw_pwm_cpu_vol_grp2";
+					function = "pw_pwm_cpu_vol_m2";
+				};
+			};
+
+			pw_backlight_pmx0: pw_backlight@0 {
+				pw_backlight_0 {
+					groups = "pw_backlight_grp0";
+					function = "pw_backlight_m0";
+				};
+			};
+
+			pw_backlight_pmx1: pw_backlight@1 {
+				pw_backlight_1 {
+					groups = "pw_backlight_grp1";
+					function = "pw_backlight_m1";
+				};
+			};
+
+			rg_eth_mac_pmx: rg_eth_mac@0 {
+				rg_eth_mac {
+					groups = "rg_eth_mac_grp";
+					function = "rg_eth_mac";
+				};
+			};
+
+			rg_gmac_phy_intr_n_pmx: rg_gmac_phy_intr_n@0 {
+				rg_gmac_phy_intr_n {
+					groups = "rg_gmac_phy_intr_n_grp";
+					function = "rg_gmac_phy_intr_n";
+				};
+			};
+
+			rg_rgmii_mac_pmx: rg_rgmii_mac@0 {
+				rg_rgmii_mac {
+					groups = "rg_rgmii_mac_grp";
+					function = "rg_rgmii_mac";
+				};
+			};
+
+			rg_rgmii_phy_ref_clk_pmx0: rg_rgmii_phy_ref_clk@0 {
+				rg_rgmii_phy_ref_clk_0 {
+					groups =
+						"rg_rgmii_phy_ref_clk_grp0";
+					function =
+						"rg_rgmii_phy_ref_clk_m0";
+				};
+			};
+
+			rg_rgmii_phy_ref_clk_pmx1: rg_rgmii_phy_ref_clk@1 {
+				rg_rgmii_phy_ref_clk_1 {
+					groups =
+						"rg_rgmii_phy_ref_clk_grp1";
+					function =
+						"rg_rgmii_phy_ref_clk_m1";
+				};
+			};
+
+			sd0_pmx: sd0@0 {
+				sd0 {
+					groups = "sd0_grp";
+					function = "sd0";
+				};
+			};
+
+			sd0_4bit_pmx: sd0_4bit@0 {
+				sd0_4bit {
+					groups = "sd0_4bit_grp";
+					function = "sd0_4bit";
+				};
+			};
+
+			sd1_pmx: sd1@0 {
+				sd1 {
+					groups = "sd1_grp";
+					function = "sd1";
+				};
+			};
+
+			sd1_4bit_pmx0: sd1_4bit@0 {
+				sd1_4bit_0 {
+					groups = "sd1_4bit_grp0";
+					function = "sd1_4bit_m0";
+				};
+			};
+
+			sd1_4bit_pmx1: sd1_4bit@1 {
+				sd1_4bit_1 {
+					groups = "sd1_4bit_grp1";
+					function = "sd1_4bit_m1";
+				};
+			};
+
+			sd2_basic_pmx: sd2_basic@0 {
+				sd2_basic {
+					groups = "sd2_basic_grp";
+					function = "sd2_basic";
+				};
+			};
+
+			sd2_cdb_pmx0: sd2_cdb@0 {
+				sd2_cdb_0 {
+					groups = "sd2_cdb_grp0";
+					function = "sd2_cdb_m0";
+				};
+			};
+
+			sd2_cdb_pmx1: sd2_cdb@1 {
+				sd2_cdb_1 {
+					groups = "sd2_cdb_grp1";
+					function = "sd2_cdb_m1";
+				};
+			};
+
+			sd2_wpb_pmx0: sd2_wpb@0 {
+				sd2_wpb_0 {
+					groups = "sd2_wpb_grp0";
+					function = "sd2_wpb_m0";
+				};
+			};
+
+			sd2_wpb_pmx1: sd2_wpb@1 {
+				sd2_wpb_1 {
+					groups = "sd2_wpb_grp1";
+					function = "sd2_wpb_m1";
+				};
+			};
+
+			sd3_pmx: sd3@0 {
+				sd3 {
+					groups = "sd3_9_grp";
+					function = "sd3";
+				};
+			};
+
+			sd5_pmx: sd5@0 {
+				sd5 {
+					groups = "sd5_grp";
+					function = "sd5";
+				};
+			};
+
+			sd6_pmx0: sd6@0 {
+				sd6_0 {
+					groups = "sd6_grp0";
+					function = "sd6_m0";
+				};
+			};
+
+			sd6_pmx1: sd6@1 {
+				sd6_1 {
+					groups = "sd6_grp1";
+					function = "sd6_m1";
+				};
+			};
+
+			sd9_pmx: sd9@0 {
+				sd9 {
+					groups = "sd3_9_grp";
+					function = "sd9";
+				};
+			};
+
+			sp0_ext_ldo_on_pmx: sp0_ext_ldo_on@0 {
+				sp0_ext_ldo_on {
+					groups = "sp0_ext_ldo_on_grp";
+					function = "sp0_ext_ldo_on";
+				};
+			};
+
+			sp0_qspi_pmx: sp0_qspi@0 {
+				sp0_qspi {
+					groups = "sp0_qspi_grp";
+					function = "sp0_qspi";
+				};
+			};
+
+			sp1_spi_pmx: sp1_spi@0 {
+				sp1_spi {
+					groups = "sp1_spi_grp";
+					function = "sp1_spi";
+				};
+			};
+
+			tpiu_trace_pmx: tpiu_trace@0 {
+				tpiu_trace {
+					groups = "tpiu_trace_grp";
+					function = "tpiu_trace";
+				};
+			};
+
+			uart0_pmx: uart0@0 {
+				uart0 {
+					groups = "uart0_grp";
+					function = "uart0";
+				};
+			};
+
+			uart0_nopause_pmx: uart0_nopause@0 {
+				uart0_nopause {
+					groups = "uart0_nopause_grp";
+					function = "uart0_nopause";
+				};
+			};
+
+			uart1_pmx: uart1@0 {
+				uart1 {
+					groups = "uart1_grp";
+					function = "uart1";
+				};
+			};
+
+			uart2_cts_pmx0: uart2_cts@0 {
+				uart2_cts_0 {
+					groups = "uart2_cts_grp0";
+					function = "uart2_cts_m0";
+				};
+			};
+
+			uart2_cts_pmx1: uart2_cts@1 {
+				uart2_cts_1 {
+					groups = "uart2_cts_grp1";
+					function = "uart2_cts_m1";
+				};
+			};
+
+			uart2_rts_pmx0: uart2_rts@0 {
+				uart2_rts_0 {
+					groups = "uart2_rts_grp0";
+					function = "uart2_rts_m0";
+				};
+			};
+
+			uart2_rts_pmx1: uart2_rts@1 {
+				uart2_rts_1 {
+					groups = "uart2_rts_grp1";
+					function = "uart2_rts_m1";
+				};
+			};
+
+			uart2_rxd_pmx0: uart2_rxd@0 {
+				uart2_rxd_0 {
+					groups = "uart2_rxd_grp0";
+					function = "uart2_rxd_m0";
+				};
+			};
+
+			uart2_rxd_pmx1: uart2_rxd@1 {
+				uart2_rxd_1 {
+					groups = "uart2_rxd_grp1";
+					function = "uart2_rxd_m1";
+				};
+			};
+
+			uart2_rxd_pmx2: uart2_rxd@2 {
+				uart2_rxd_2 {
+					groups = "uart2_rxd_grp2";
+					function = "uart2_rxd_m2";
+				};
+			};
+
+			uart2_txd_pmx0: uart2_txd@0 {
+				uart2_txd_0 {
+					groups = "uart2_txd_grp0";
+					function = "uart2_txd_m0";
+				};
+			};
+
+			uart2_txd_pmx1: uart2_txd@1 {
+				uart2_txd_1 {
+					groups = "uart2_txd_grp1";
+					function = "uart2_txd_m1";
+				};
+			};
+
+			uart2_txd_pmx2: uart2_txd@2 {
+				uart2_txd_2 {
+					groups = "uart2_txd_grp2";
+					function = "uart2_txd_m2";
+				};
+			};
+
+			uart3_cts_pmx0: uart3_cts@0 {
+				uart3_cts_0 {
+					groups = "uart3_cts_grp0";
+					function = "uart3_cts_m0";
+				};
+			};
+
+			uart3_cts_pmx1: uart3_cts@1 {
+				uart3_cts_1 {
+					groups = "uart3_cts_grp1";
+					function = "uart3_cts_m1";
+				};
+			};
+
+			uart3_cts_pmx2: uart3_cts@2 {
+				uart3_cts_2 {
+					groups = "uart3_cts_grp2";
+					function = "uart3_cts_m2";
+				};
+			};
+
+			uart3_rts_pmx0: uart3_rts@0 {
+				uart3_rts_0 {
+					groups = "uart3_rts_grp0";
+					function = "uart3_rts_m0";
+				};
+			};
+
+			uart3_rts_pmx1: uart3_rts@1 {
+				uart3_rts_1 {
+					groups = "uart3_rts_grp1";
+					function = "uart3_rts_m1";
+				};
+			};
+
+			uart3_rts_pmx2: uart3_rts@2 {
+				uart3_rts_2 {
+					groups = "uart3_rts_grp2";
+					function = "uart3_rts_m2";
+				};
+			};
+
+			uart3_rxd_pmx0: uart3_rxd@0 {
+				uart3_rxd_0 {
+					groups = "uart3_rxd_grp0";
+					function = "uart3_rxd_m0";
+				};
+			};
+
+			uart3_rxd_pmx1: uart3_rxd@1 {
+				uart3_rxd_1 {
+					groups = "uart3_rxd_grp1";
+					function = "uart3_rxd_m1";
+				};
+			};
+
+			uart3_rxd_pmx2: uart3_rxd@2 {
+				uart3_rxd_2 {
+					groups = "uart3_rxd_grp2";
+					function = "uart3_rxd_m2";
+				};
+			};
+
+			uart3_txd_pmx0: uart3_txd@0 {
+				uart3_txd_0 {
+					groups = "uart3_txd_grp0";
+					function = "uart3_txd_m0";
+				};
+			};
+
+			uart3_txd_pmx1: uart3_txd@1 {
+				uart3_txd_1 {
+					groups = "uart3_txd_grp1";
+					function = "uart3_txd_m1";
+				};
+			};
+
+			uart3_txd_pmx2: uart3_txd@2 {
+				uart3_txd_2 {
+					groups = "uart3_txd_grp2";
+					function = "uart3_txd_m2";
+				};
+			};
+
+			uart4_basic_pmx: uart4_basic@0 {
+				uart4_basic {
+					groups = "uart4_basic_grp";
+					function = "uart4_basic";
+				};
+			};
+
+			uart4_cts_pmx0: uart4_cts@0 {
+				uart4_cts_0 {
+					groups = "uart4_cts_grp0";
+					function = "uart4_cts_m0";
+				};
+			};
+
+			uart4_cts_pmx1: uart4_cts@1 {
+				uart4_cts_1 {
+					groups = "uart4_cts_grp1";
+					function = "uart4_cts_m1";
+				};
+			};
+
+			uart4_cts_pmx2: uart4_cts@2 {
+				uart4_cts_2 {
+					groups = "uart4_cts_grp2";
+					function = "uart4_cts_m2";
+				};
+			};
+
+			uart4_rts_pmx0: uart4_rts@0 {
+				uart4_rts_0 {
+					groups = "uart4_rts_grp0";
+					function = "uart4_rts_m0";
+				};
+			};
+
+			uart4_rts_pmx1: uart4_rts@1 {
+				uart4_rts_1 {
+					groups = "uart4_rts_grp1";
+					function = "uart4_rts_m1";
+				};
+			};
+
+			uart4_rts_pmx2: uart4_rts@2 {
+				uart4_rts_2 {
+					groups = "uart4_rts_grp2";
+					function = "uart4_rts_m2";
+				};
+			};
+
+			usb0_drvvbus_pmx0: usb0_drvvbus@0 {
+				usb0_drvvbus_0 {
+					groups = "usb0_drvvbus_grp0";
+					function = "usb0_drvvbus_m0";
+				};
+			};
+
+			usb0_drvvbus_pmx1: usb0_drvvbus@1 {
+				usb0_drvvbus_1 {
+					groups = "usb0_drvvbus_grp1";
+					function = "usb0_drvvbus_m1";
+				};
+			};
+
+			usb1_drvvbus_pmx0: usb1_drvvbus@0 {
+				usb1_drvvbus_0 {
+					groups = "usb1_drvvbus_grp0";
+					function = "usb1_drvvbus_m0";
+				};
+			};
+
+			usb1_drvvbus_pmx1: usb1_drvvbus@1 {
+				usb1_drvvbus_1 {
+					groups = "usb1_drvvbus_grp1";
+					function = "usb1_drvvbus_m1";
+				};
+			};
+
+			visbus_dout_pmx: visbus_dout@0 {
+				visbus_dout {
+					groups = "visbus_dout_grp";
+					function = "visbus_dout";
+				};
+			};
+
+			vi_vip1_pmx: vi_vip1@0 {
+				vi_vip1 {
+					groups = "vi_vip1_grp";
+					function = "vi_vip1";
+				};
+			};
+
+			vi_vip1_ext_pmx: vi_vip1_ext@0 {
+				vi_vip1_ext {
+					groups = "vi_vip1_ext_grp";
+					function = "vi_vip1_ext";
+				};
+			};
+
+			vi_vip1_low8bit_pmx: vi_vip1_low8bit@0 {
+				vi_vip1_low8bit {
+					groups = "vi_vip1_low8bit_grp";
+					function = "vi_vip1_low8bit";
+				};
+			};
+
+			vi_vip1_high8bit_pmx: vi_vip1_high8bit@0 {
+				vi_vip1_high8bit {
+					groups = "vi_vip1_high8bit_grp";
+					function = "vi_vip1_high8bit";
+				};
+			};
+		};
+
+		pmipc {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x13240000 0x13240000 0x00010000>;
+			pmipc@0x13240000 {
+				compatible = "sirf,atlas7-pmipc";
+				reg = <0x13240000 0x00010000>;
+			};
+		};
+
+		spramfw {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x10250000 0x10250000 0x4000>;
+			spramfw@0x10250000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x10250000 0x4000>;
+			};
+		};
+
+		dramfw {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x10830000 0x10830000 0x18000>;
+			dramfw@10820000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x10830000 0x18000>;
+			};
+		}; 
+
+		cpum {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x00000000 0x00000000 0x00014000>,
+			       <0x04000000 0x04000000 0x00030000>,
+			       <0x10200000 0x10200000 0x3000>;
+			cpum:cpum@10200000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x10200000 0x3000>;
+				interrupts = <0 104 0>;
+				clocks = <&car 20>, <&car 128>, <&car 250>;
+				clock-names = "cpum_cpu", "coresight_cpudiv2",
+					"cpupll_clk2";
+				regofs = <&cpum 0x800 0x900 0x1050 0>;
+
+				qos {
+					a7 {
+						offset = <0x000>;
+						bw = <400>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "cpum_cpu";
+					};
+
+					cssi_etr_axi {
+						offset = <0x080>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name =
+							"coresight_cpudiv2";
+					};
+				};
+
+				bw_probe {
+					a7 {
+						offset = <0x400>;
+						clock_name = "cpupll_clk2";
+					};
+				};
+			};
+
+			sdrsram@0x04020000 {
+				reg = <0x04020000 0xFC00>;
+			};
+
+		}; 
+		cgum {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x18641000 0x18641000 0x3000>,
+					 <0x18620000 0x18620000 0x1000>,
+					<0x18630000 0x18630000 0x10000>,
+					<0x18660000 0x18660000 0x600>,
+					<0x18680000 0x18680000 0x100>;
+
+			cgum:cgum@18641000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x18641000 0x3000>;
+				regofs = <&cgum 0 0 0x50 0>;
+			};
+
+			car: clock-controller@18620000 {
+				compatible = "sirf,atlas7-car";
+				reg = <0x18620000 0x1000>;
+				#clock-cells = <1>;
+				#reset-cells = <1>;
+			};
+
+			ntfw_car: ntfw_car@18660000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x18660000 0x600>;
+			};
+
+			pwm: pwm@18630000 {
+				compatible = "sirf,prima2-pwm";
+				#pwm-cells = <2>;
+				reg = <0x18630000 0x10000>;
+				clocks = <&car 50>, <&car 48>, <&car 238>,
+					<&car 241>,  <&car 49>, <&car 247>;
+				clock-names = "pwmc", "sigsrc0", "sigsrc1",
+					"sigsrc2", "sigsrc3", "sigsrc4";
+			};
+
+			ntfw_pwm: ntfw_pwm@18680000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x18680000 0x100>;
+			};
+		};
+
+		gnssm {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x18000000 0x18000000 0x0000ffff>,
+				<0x18010000 0x18010000 0x1000>,
+				<0x18020000 0x18020000 0x1000>,
+				<0x18030000 0x18030000 0x1000>,
+				<0x18040000 0x18040000 0x1000>,
+				<0x18050000 0x18050000 0x1000>,
+				<0x18060000 0x18060000 0x1000>,
+				<0x180b0000 0x180b0000 0x4000>,
+				<0x18100000 0x18100000 0x3000>,
+				<0x18200000 0x18200000 0x1000>,
+				<0x18240000 0x18240000 0x10000>,
+				<0x18250000 0x18250000 0x10000>,
+				<0x18280000 0x18280000 0x1000>;
+
+			dmac0: dma-controller@18000000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-dmac";
+				reg = <0x18000000 0x1000>;
+				interrupts = <0 12 0>;
+				clocks = <&car 113>;
+				dma-channels = <16>;
+				#dma-cells = <1>;
+			};
+
+			ntfw_dmac0: ntfw_dmac0@18280000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x18280000 0x1000>;
+			};
+
+			gnssm:gnssm@0x18100000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x18100000 0x3000>;
+				interrupts = <0 106 0>;
+				clocks = <&car 122>, <&car 113>, <&car 112>, <&car 111>, <&car 121>;
+				clock-names = "gmac_gmac", "dmac0_io", "ccpub_sec", "ccsec_sec", "gmac_rgmii";
+				regofs = <&gnssm 0 0x600 0x1050 0x4000>;
+
+				qos {
+					dmac0 {
+						offset = <0x000>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "dmac0_io";
+					};
+
+					eth_avb {
+						offset = <0x080>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "gmac_gmac";
+					};
+
+					sec_public {
+						offset = <0x100>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "ccpub_sec";
+					};
+
+					sec_secure {
+						offset = <0x180>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "ccsec_sec";
+					};
+				};
+
+				bw_probe {
+					eth0 {
+						offset = <0x800>;
+						clock_name = "gmac_gmac";
+					};
+
+					dmac0 {
+						offset = <0x2000>;
+						clock_name = "dmac0_io";
+					};
+				};
+			};
+
+			uart0: uart@18010000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-uart";
+				reg = <0x18010000 0x1000>;
+				interrupts = <0 17 0>;
+				clocks = <&car 114>;
+				fifosize = <128>;
+				dmas = <&dmac0 3>, <&dmac0 2>;
+				dma-names = "rx", "tx";
+				sirf,uart-has-rtscts;
+				pinctrl-0 = <&uart0_pmx>;
+				pinctrl-names = "default";
+				status = "disabled";
+			};
+
+			uart1: uart@18020000 {
+				cell-index = <1>;
+				compatible = "sirf,atlas7-uart";
+				reg = <0x18020000 0x1000>;
+				interrupts = <0 18 0>;
+				clocks = <&car 107>;
+				fifosize = <32>;
+				dma-names = "rx", "tx";
+				status = "okay";
+			};
+
+			uart2: uart@18030000 {
+				cell-index = <2>;
+				compatible = "sirf,atlas7-uart";
+				reg = <0x18030000 0x1000>;
+				interrupts = <0 19 0>;
+				clocks = <&car 115>;
+				fifosize = <128>;
+				//dmas = <&dmac0 6>, <&dmac0 7>;
+				dma-names = "rx", "tx";
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart2_rxd_pmx2
+						    &uart2_txd_pmx2
+							&sample3_cfg
+							>;
+				status = "okay";
+			};
+
+			uart3: uart@18040000 {
+				cell-index = <3>;
+				compatible = "sirf,atlas7-uart";
+				reg = <0x18040000 0x1000>;
+				interrupts = <0 66 0>;
+				clocks = <&car 116>;
+				fifosize = <128>;
+				dmas = <&dmac0 4>, <&dmac0 5>;
+				dma-names = "rx", "tx";
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart3_rxd_pmx0
+						&uart3_txd_pmx0>;
+				status = "disabled";
+			};
+
+
+			uart4: uart@18050000 {
+				cell-index = <4>;
+				compatible = "sirf,atlas7-uart";
+				reg = <0x18050000 0x1000>;
+				interrupts = <0 69 0>;
+				clocks = <&car 117>;
+				fifosize = <128>;
+				//dmas = <&dmac0 0>, <&dmac0 1>;
+				dma-names = "rx", "tx";
+				
+				pinctrl-0 = <&uart4_basic_pmx
+							&uart4_cts_pmx2
+							&uart4_rts_pmx2>;
+				pinctrl-names = "default";
+				sirf,uart-has-rtscts;
+				status = "okay";
+			};
+			
+			uart5: uart@18060000 {
+				cell-index = <5>;
+				compatible = "sirf,atlas7-uart";
+				reg = <0x18060000 0x1000>;
+				interrupts = <0 71 0>;
+				clocks = <&car 118>;
+				fifosize = <128>;
+				dmas = <&dmac0 8>, <&dmac0 9>;
+				dma-names = "rx", "tx";
+				status = "okay";
+			};
+			
+			gmac: eth@180b0000 {
+				compatible = "snps, dwc-eth-qos";
+				reg = <0x180b0000 0x4000>;
+				interrupts = <0 59 0>, <0 70 0>;
+				interrupt-names = "macirq", "macpmt";
+				clocks = <&car 39>, <&car 46>,
+				       <&car 121>, <&car 122>;
+				clock-names = "gnssm_rgmii", "gnssm_gmac",
+					"rgmii", "gmac";
+				local-mac-address = [00 00 00 00 00 00];
+				phy-mode = "rgmii";
+				pinctrl-names = "default";
+				pinctrl-0 = <&rg_eth_mac_pmx
+						&rg_gmac_phy_intr_n_pmx
+						&rg_rgmii_mac_pmx>;
+				status = "disabled";
+			};
+
+			spi1: spi@18200000 {
+				compatible = "sirf,prima2-spi-slave";
+				reg = <0x18200000 0x1000>;
+				interrupts = <0 16 0>;
+				clocks = <&car 119>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				dmas = <&dmac0 12>, <&dmac0 13>;
+				dma-names = "rx", "tx";
+				pinctrl-0 = <&sp1_spi_pmx>;
+				pinctrl-names = "default";
+				status = "okay";
+			};
+			
+			dssec@18240000 {
+				compatible = "dx,cc44s";
+				reg = <0x18240000 0x10000>;
+				interrupts = <0 26 0>;
+				clocks = <&car 111>;
+			};
+			
+		};
+
+		gpum {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x13000000 0x13000000 0x3000>,
+				<0x13010000 0x13010000 0x1400>,
+				<0x13010800 0x13010800 0x100>,
+				<0x13011000 0x13011000 0x100>;
+			gpum:gpum@0x13000000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x13000000 0x3000>;
+				interrupts = <0 107 0>;
+				clocks = <&car 130>, <&car 70>;
+				clock-names = "graphic_gpu", "vss_sdr";
+				regofs = <&gpum 0 0x800 0x1050 0x8000>;
+
+				qos {
+					sgx {
+						offset = <0x000>;
+						bw = <600>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "graphic_gpu";
+					};
+
+					sdr {
+						offset = <0x080>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "vss_sdr";
+					};
+				};
+
+				bw_probe {
+					sgx {
+						offset = <0x400>;
+						clock_name = "graphic_gpu";
+					};
+
+					sdr {
+						offset = <0x2000>;
+						clock_name = "vss_sdr";
+					};
+				};
+			};
+			dmacsdrr: dma-controller@13010800 {
+				cell-index = <5>;
+				compatible = "sirf,atlas7-dmac-v2";
+				reg = <0x13010800 0x100>;
+				interrupts = <0 8 0>;
+				clocks = <&car 70>;
+				#dma-cells = <1>;
+				#dma-channels = <1>;
+			};
+			dmacsdrw: dma-controller@13011000 {
+				cell-index = <6>;
+				compatible = "sirf,atlas7-dmac-v2";
+				reg = <0x13011000 0x100>;
+				interrupts = <0 9 0>;
+				clocks = <&car 70>;
+				#dma-cells = <1>;
+				#dma-channels = <1>;
+			};
+			sdr@0x13010000 {
+				compatible = "sirf,atlas7-sdr";
+				reg = <0x13010000 0x1400>;
+				interrupts = <0 7 0>,
+					   <0 8 0>,
+					   <0 9 0>;
+				clocks = <&car 70>;
+				resets = <&car 70>;
+				dmas = <&dmacsdrr 0>, <&dmacsdrw 0>;
+				dma-names = "tx", "rx";
+			};
+		};
+
+		mediam {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x15000000 0x15000000 0x00600000>,
+				<0x16000000 0x16000000 0x00200000>,
+				<0x17000000 0x17000000 0x10000>,
+				<0x17020000 0x17020000 0x1000>,
+				<0x17030000 0x17030000 0x1000>,
+				<0x17040000 0x17040000 0x1000>,
+				<0x17050000 0x17050000 0x10000>,
+				<0x17060000 0x17060000 0x200>,
+				<0x17060200 0x17060200 0x100>,
+				<0x17070000 0x17070000 0x200>,
+				<0x17070200 0x17070200 0x100>,
+				<0x170A0000 0x170A0000 0x3000>,
+				<0x170C0000 0x170C0000 0x200>;
+
+			multimedia@15000000 {
+				compatible = "sirf,atlas7-video-codec";
+				reg = <0x15000000 0x10000>;
+				interrupts = <0 5 0>;
+				clocks = <&car 131>;
+				memory-region = <&multimedia_reserved>;
+			};
+
+			mediam:mediam@170A0000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x170A0000 0x3000>;
+				interrupts = <0 108 0>;
+				clocks = <&car 131>, <&car 133>, <&car 132>, <&car 57>, <&car 60>, <&car 61>, <&car 58>;
+				clock-names = "media_vdec", "g2d_g2d", "media_jpenc", "nand_io", "usb0_usb", "usb1_usb", "sys2pci2_io";
+				regofs = <&mediam 0 0x900 0x1050 0x4000>;
+
+				qos {
+					g2d {
+						offset = <0x000>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "g2d_g2d";
+					};
+
+					jpeg {
+						offset = <0x080>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "media_jpenc";
+					};
+
+					nand {
+						offset = <0x200>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "nand_io";
+					};
+
+					vxd {
+						offset = <0x280>;
+						bw = <600>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "media_vdec";
+					};
+
+					usb0 {
+						offset = <0x300>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "usb0_usb";
+					};
+
+					usb1 {
+						offset = <0x380>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "usb1_usb";
+					};
+
+					mediam_sys2pci {
+						offset = <0x400>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "sys2pci2_io";
+					};
+
+				};
+
+				bw_probe {
+					g2d {
+						offset = <0xc00>;
+						clock_name = "g2d_g2d";
+					};
+
+					vxd {
+						offset = <0x2000>;
+						clock_name = "media_vdec";
+					};
+				};
+			};
+
+			gpio_0: gpio_mediam@17040000 {
+				#gpio-cells = <2>;
+				#interrupt-cells = <2>;
+				compatible = "sirf,atlas7-gpio";
+				reg = <0x17040000 0x1000>;
+				interrupts = <0 13 0>, <0 14 0>;
+				clocks = <&car 98>;
+				clock-names = "gpio0_io";
+				gpio-controller;
+				interrupt-controller;
+
+				gpio-banks = <2>;
+				gpio-ranges = <&pinctrl 0 0 0>,
+						<&pinctrl 32 0 0>;
+				gpio-ranges-group-names = "lvds_gpio_grp",
+						"jtag_uart_nand_gpio_grp";
+			};
+
+			ntfw_gpio_0: ntfw_gpio_0@170C0000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x170C0000 0x200>;
+			};
+
+			nand@17050000 {
+				compatible = "sirf,atlas7-nand";
+				reg = <0x17050000 0x10000>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&nd_df_basic_pmx>;
+				interrupts = <0 41 0>;
+				clocks = <&car 57>, <&car 112>;
+				clock-names = "nand_io", "nand_nand";
+				memory-region = <&nanddisk_reserved>;
+				status = "disabled";
+			};
+
+			sd0: sdhci@16000000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x16000000 0x100000>;
+				interrupts = <0 38 0>;
+				clocks = <&car 99>, <&car 100>;
+				clock-names = "core", "iface";
+				wp-inverted;
+				non-removable;
+				bus-width = <8>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&sd0_pmx>;
+				status = "okay";
+			};
+
+			sd1: sdhci@16100000 {
+				cell-index = <1>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x16100000 0x100000>;
+				interrupts = <0 38 0>;
+				clocks = <&car 99>, <&car 100>;
+				clock-names = "core", "iface";
+				non-removable;
+				status = "disabled";
+				bus-width = <8>;
+			};
+
+			jpeg@17000000 {
+				compatible = "sirf,atlas7-jpeg";
+				reg = <0x17000000 0x10000>;
+				interrupts = <0 72 0>,
+							 <0 73 0>;
+				clocks = <&car 132>;
+				resets = <&car 132>;
+				memory-region = <&jpeg_reserved>;
+			};
+
+			usb0: usb@17060000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-usb";
+				reg = <0x17060000 0x200>;
+				interrupts = <0 10 0>;
+				clocks = <&car 60>;
+				sirf,usbphy = <&usbphy0>;
+				phy_type = "utmi";
+				dr_mode = "otg";
+				maximum-speed = "high-speed";
+				vbus-supply = <&reg_usb0_otg_vbus>;
+				status = "okay";
+			};
+
+			usb1: usb@17070000 {
+				cell-index = <1>;
+				compatible = "sirf,atlas7-usb";
+				reg = <0x17070000 0x200>;
+				interrupts = <0 11 0>;
+				clocks = <&car 61>;
+				sirf,usbphy = <&usbphy1>;
+				phy_type = "utmi";
+				dr_mode = "host";
+				maximum-speed = "high-speed";
+				vbus-supply = <&reg_usb1_otg_vbus>;
+				status = "disabled";
+			};
+
+			usbphy0: usbphy@0 {
+				compatible = "sirf,atlas7-usbphy";
+				reg = <0x17060200 0x100>;
+				clocks = <&car 62>;
+				status = "okay";
+			};
+
+			usbphy1: usbphy@1 {
+				compatible = "sirf,atlas7-usbphy";
+				reg = <0x17070200 0x100>;
+				clocks = <&car 63>;
+				status = "okay";
+			}; 
+
+			i2c0: i2c@17020000 {
+				cell-index = <0>;
+				compatible = "sirf,prima2-i2c";
+				reg = <0x17020000 0x1000>;
+				interrupts = <0 24 0>;
+				clocks = <&car 64>;
+				clock-frequency = <228000>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c0_pmx &sample1_cfg &ca_coex_pmx >;
+				status = "okay";
+				
+				ds927@c{
+					compatible = "ds927,ds_927";					
+					reg = <0x0c>;
+				};
+				
+				goodix@5d{
+					compatible = "goodix,gt9xx";
+					interrupt-parent = <&gpio_1>;
+					interrupts = <50 0x02>; 
+					goodix,power-gpio = <&gpio_1 51 0>; // ldd_4   pow_ctl
+					goodix,irq-gpio   = <&gpio_1 50 0>; // ldd_3
+					reg = <0x5d>;
+				};
+			};	
+			
+			i2c2: i2c2@2 {
+				compatible = "i2c-gpio";
+				gpios = <&gpio_1 38 0 /* sda */
+					     &gpio_1 37 0 /* scl */
+					    >;
+				reset-gpio = <&gpio_1 39 0>;
+				i2c-gpio,sda-open-drain;
+				i2c-gpio,scl-open-drain;
+				i2c-gpio,delay-us = <10>;	/* ~100 kHz */
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+		};
+
+		vdifm {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x131e0000 0x131e0000 0x100>,
+				<0x13320000 0x13320000 0x400>,
+				<0x13290000 0x13290000 0x10000>,
+				<0x13300000 0x13300000 0x1000>,
+				<0x13160000 0x13160000 0x1000>,
+				<0x133d0000 0x133d0000 0x100>,
+				<0x133e0000 0x133e0000 0x100>,
+				<0x133f0000 0x133f0000 0x1000>,
+				<0x14100000 0x14100000 0x700000>;
+
+			sys2pci@131e0000 {
+				compatible = "sirf,sys2pci";
+				reg = <0x131e0000 0x100>;
+			};
+
+			vdifm:vdifm@13290000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x13290000 0x10000>;
+				interrupts = <0 110 0>;
+				clocks = <&car 88>, <&car 93>, <&car 54>,
+					<&car 131>, <&car 90>, <&car 90>,
+					<&car 92>, <&car 89>, <&car 91>,
+					<&car 73>;
+				clock-names = "vip1_vip", "dcu_deint",
+					"sys2pci_io", "media_vdec",
+					"lcd0_disp0", "lcd1_disp1",
+					"sys2pci_io", "vpp0_disp0",
+					"vpp1_disp1", "dmac1_hsi2s";
+				regofs = <&vdifm 0 0x400 0x2050 0xC000>;
+
+				qos {
+					dcu {
+						offset = <0x500>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000505>;
+						mode = <0>;
+						clock_name = "dcu_deint";
+					};
+
+					lcd0 {
+						offset = <0x600>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "lcd0_disp0";
+					};
+
+					lcd1 {
+						offset = <0x700>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "lcd1_disp1";
+					};
+
+					sys2pci {
+						offset = <0x800>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000505>;
+						mode = <0>;
+						clock_name = "sys2pci_io";
+					};
+
+					vip1 {
+						offset = <0xa00>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000505>;
+						mode = <0>;
+						clock_name = "vip1_vip";
+					};
+
+					vpp0 {
+						offset = <0xa80>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000606>;
+						mode = <0>;
+						clock_name = "vpp0_disp0";
+					};
+
+					vpp1 {
+						offset = <0xb80>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000606>;
+						mode = <0>;
+						clock_name = "vpp1_disp1";
+					};
+
+					dmac1 {
+						offset = <0xc80>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000505>;
+						mode = <0>;
+						clock_name = "dmac1_hsi2s";
+					};
+				};
+
+				bw_probe {
+					syspci {
+						offset = <0x5000>;
+						clock_name = "sys2pci_io";
+					};
+
+					lcd0 {
+						offset = <0x3000>;
+						port = <0>;
+						clock_name = "lcd0_disp0";
+					};
+
+					vpp0 {
+						offset = <0x3000>;
+						port = <1>;
+						clock_name = "vpp0_disp0";
+					};
+
+					lcd1 {
+						offset = <0x4000>;
+						port = <1>;
+						clock_name = "lcd1_disp1";
+					};
+
+					vpp1 {
+						offset = <0x4000>;
+						port = <0>;
+						clock_name = "vpp1_disp1";
+					};
+
+					vip1 {
+						offset = <0x6000>;
+						clock_name = "vip1_vip";
+					};
+
+					dcu {
+						offset = <0>;
+						clock_name = "dcu_deint";
+					};
+				};
+			};
+
+			gpio_1: gpio_vdifm@13300000 {
+				#gpio-cells = <2>;
+				#interrupt-cells = <2>;
+				compatible = "sirf,atlas7-gpio";
+				reg = <0x13300000 0x1000>;
+				interrupts = <0 43 0>, <0 44 0>,
+						<0 45 0>, <0 46 0>;
+				gpio-controller;
+				interrupt-controller;
+
+				gpio-banks = <4>;
+				gpio-ranges = <&pinctrl 0 0 0>,
+						<&pinctrl 32 0 0>,
+						<&pinctrl 64 0 0>,
+						<&pinctrl 96 0 0>;
+				gpio-ranges-group-names = "gnss_gpio_grp",
+							"lcd_vip_gpio_grp",
+							"sdio_i2s_gpio_grp",
+							"sp_rgmii_gpio_grp";
+			};
+
+			ntfw_gpio_1: ntfw_gpio_1@13320000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x13320000 0x400>;
+			};
+
+
+			sd2: sdhci@14200000 {
+				cell-index = <2>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x14200000 0x100000>;
+				interrupts = <0 23 0>;
+				clocks = <&car 101>, <&car 102>;
+				clock-names = "core", "iface";
+				bus-width = <4>;
+				sd-uhs-sdr50;
+				vqmmc-supply = <&vqmmc>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&sd2_basic_pmx
+					&sd2_cdb_pmx0
+					&sd2_wpb_pmx0
+					&sample2_cfg
+//					&sd2_wpb_pmx1
+				>;
+				status = "okay";
+				vqmmc: vqmmc@2 {
+					regulator-min-microvolt = <1650000>;
+					regulator-max-microvolt = <1950000>;
+					regulator-name = "vqmmc-ldo";
+					regulator-type = "voltage";
+					regulator-boot-on;
+					regulator-allow-bypass;
+				};
+			};
+
+			sd3: sdhci@14300000 {
+				cell-index = <3>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x14300000 0x100000>;
+				interrupts = <0 23 0>;
+				clocks = <&car 101>, <&car 102>;
+				clock-names = "core", "iface";
+				bus-width = <4>;
+						
+				broken-cd;
+				//keep-power-in-suspend;
+				//enable-sdio-wakeup;
+				sd-uhs-sdr50;
+				max-frequency =<50000000>;
+	
+				pinctrl-names = "default";
+				pinctrl-0 = <&sd3_pmx>;
+				status = "okay";
+			};
+
+			sd5: sdhci@14500000 {
+				cell-index = <5>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x14500000 0x100000>;
+				interrupts = <0 39 0>;
+				clocks = <&car 103>, <&car 104>;
+				clock-names = "core", "iface";
+				bus-width = <4>;
+				loop-dma;
+				cap-power-off-card;
+				pinctrl-names = "default";
+				pinctrl-0 = <&sd5_pmx>;
+				status = "disabled";
+			};
+
+			sd6: sdhci@14600000 {
+				cell-index = <6>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x14600000 0x100000>;
+				interrupts = <0 98 0>;
+				clocks = <&car 105>, <&car 106>;
+				clock-names = "core", "iface";
+				status = "disabled";
+				bus-width = <4>;
+			};
+
+			sd7: sdhci@14700000 {
+				cell-index = <7>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x14700000 0x100000>;
+				interrupts = <0 98 0>;
+				clocks = <&car 105>, <&car 106>;
+				clock-names = "core", "iface";
+				status = "okay";
+				bus-width = <4>;
+			};
+
+			sd9: sdhci@14100000 {
+				cell-index = <9>;
+				compatible = "sirf,atlas7-sdhc";
+				reg = <0x14100000 0x100000>;
+				interrupts = <0 23 0>;
+				clocks = <&car 103>, <&car 104>;
+				clock-names = "core", "iface";
+				bus-width = <4>;
+				loop-dma;
+				cap-power-off-card;
+				pinctrl-names = "default";
+				pinctrl-0 = <&sd9_pmx>;
+				status = "disabled";
+			};
+
+			dmac1: dma-controller@133f0000 {
+				cell-index = <1>;
+				compatible = "sirf,atlas7-dmac";
+				reg = <0x133f0000 0x1000>;
+				interrupts = <0 73 0>;
+				clocks = <&car 73>;
+				dma-channels = <16>;
+				#dma-cells = <1>;
+			};
+
+			hsi2s0: i2s0@133d0000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-hsi2s";
+				reg = <0x133d0000 0x100>;
+				interrupts = <0 114 0>;
+				clocks = <&car 71>;
+				dmas = <&dmac1 0>;
+				dma-names = "rx";
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2s0_pmx>;
+				status = "disabled";
+			};
+
+			hsi2s1: i2s0@133e0000 {
+				cell-index = <1>;
+				compatible = "sirf,atlas7-hsi2s";
+				reg = <0x133e0000 0x100>;
+				interrupts = <0 115 0>;
+				clocks = <&car 72>;
+				dmas = <&dmac1 1>;
+				dma-name = "rx";
+				status = "disabled";
+			};
+		};
+
+		audiom {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x10d50000 0x10d50000 0x0000ffff>,
+					<0x10d60000 0x10d60000 0x0000ffff>,
+					<0x10d80000 0x10d80000 0x0000ffff>,
+					<0x10d90000 0x10d90000 0x0000ffff>,
+					<0x10ED0000 0x10ED0000 0x4000>,
+					<0x10dc8000 0x10dc8000 0x1000>,
+					<0x10dc0000 0x10dc0000 0x1000>,
+					<0x10db0000 0x10db0000 0x4000>,
+					<0x10d40000 0x10d40000 0x1000>,
+					<0x10d30000 0x10d30000 0x1000>,
+					<0x10d20000 0x10d20000 0x1000>,
+					<0x10d02000 0x10d02000 0x1000>,
+					<0x10e30000 0x10e30000 0x1000>,
+					<0x10d01000 0x10d01000 0x100>,
+					<0x10f00000 0x10f00000 0x1000>,
+					<0x10f20000 0x10f20000 0x1000>;
+
+
+			i2s: i2s@10d02000 {
+				compatible = "sirf,atlas7-i2s";
+				reg = <0x10d02000 0x1000>;
+				dmas = <&dmac3 1>, <&dmac3 2>;
+				dma-names = "rx", "tx";
+				clocks = <&car 84>, <&car 83>, <&car 7>,
+				       <&car 255>;
+				clock-names = "i2s", "audioif", "audmscm_i2s",
+					"audio_dto";
+				pinctrl-names = "default";
+				pinctrl-0 = <&audio_i2s_2ch_pmx>;
+				status = "okay";
+
+				//sw1-sel = <&gpio_3 8 0>;
+				//sw2-sel = <&gpio_3 9 0>;
+				sw1-sel-val = <0>;
+				sw2-sel-val = <1>; /*I2S_WS_AU output*/
+				/*
+				 * sw1-sel-val = <1>;
+				 * sw2-sel-val = <0>; I2S_WS_VP output
+				 * sw1-sel-val = <0>;
+				 * sw2-sel-val = <0>; I2S_WS_LD output
+				 */
+			};
+
+			timer@10dc0000 {
+				compatible = "sirf,atlas7-tick";
+				reg = <0x10dc0000 0x1000>;
+				interrupts = <0 0 0>,
+					   <0 1 0>,
+					   <0 2 0>,
+					   <0 49 0>,
+					   <0 50 0>,
+					   <0 51 0>;
+				clocks = <&car 51>;
+				status = "okay";
+			};
+
+			timerb@10dc8000 {
+				compatible = "sirf,atlas7-tick";
+				reg = <0x10dc8000 0x1000>;
+				interrupts = <0 74 0>,
+						   <0 75 0>,
+						   <0 76 0>,
+						   <0 77 0>,
+						   <0 78 0>,
+						   <0 79 0>;
+				clocks = <&car 51>;
+				status = "disabled";
+			};
+
+			vip0@10db0000 {
+				compatible = "sirf,atlas7-cvd-vip",
+						"sirf,rv-vip";
+				reg = <0x10db0000 0x2000>;
+				interrupts = <0 85 0>;
+				clocks = <&car 95>;
+				sirf,vip_cma_size = <0xC00000>;
+				status = "okay";
+				
+				port {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					vip0_0: endpoint@0 {
+						reg = <0>;
+						remote-endpoint = <&cvd_1>;
+					};
+				};
+			};
+
+			cvd@10db2000 {
+				compatible = "sirf,cvd";
+				reg = <0x10db2000 0x2000>;
+				clocks = <&car 95>;
+				resets = <&car 95>;
+				input-number = <2>;
+				inputs = <&cvbs0 &cvbs1>;
+				cvd,camera-power-gpio1 	= <&gpio_1 60 0>;     	//camera
+				cvd,ds927-power-gpio2   = <&gpio_1 32 0>;     	//
+				cvd,power-gpio3    		= <&gpio_1 36 0>; 		// 
+				cvd,power-gpio4    		= <&gpio_1 57 0>; 		// 	
+				cvbs0: cvbs@0 {
+					input-name = "camera"; /* rv */
+					input-id = <0>;
+				};
+				cvbs1: cvbs@1 {
+					input-name = "dvd";
+					input-id = <1>;
+				};
+				port {
+					cvd_1: endpoint {
+						hsync-active = <0>;
+						vsync-active = <0>;
+						remote-endpoint = <&vip0_0>;
+					};
+				};
+			};
+
+			dmac2: dma-controller@10d50000 {
+				status = "okay";
+				cell-index = <2>;
+				compatible = "sirf,atlas7-dmac";
+				reg = <0x10d50000 0xffff>;
+				interrupts = <0 55 0>;
+				clocks = <&car 74>;
+				dma-channels = <16>;
+				#dma-cells = <1>;
+			};
+
+			ntfw_dmac2: ntfw_dmac2@10f00000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x10f00000 0x1000>;
+			};
+
+			dmac3: dma-controller@10d60000 {
+				status = "disabled";	/* Kalimba takes over */
+				cell-index = <3>;
+				compatible = "sirf,atlas7-dmac";
+				reg = <0x10d60000 0xffff>;
+				interrupts = <0 56 0>;
+				clocks = <&car 80>;
+				dma-channels = <16>;
+				#dma-cells = <1>;
+			};
+
+			ntfw_dmac3: ntfw_dmac3@10f20000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x10f20000 0x1000>;
+			};
+
+			adc: adc@10d80000 {
+				compatible = "sirf,atlas7-adc";
+				reg = <0x10d80000 0xffff>;
+				interrupts = <0 34 0>;
+				clocks = <&car 66>, <&car 67>, <&audioclk 0>;
+				clock-names = "xin", "io", "analog";
+				#io-channel-cells = <1>;
+				ldo-supply = <&ldo0>, <&ldo1>;
+				cali-offset0 = <0>;
+				cali-offset2 = <0>;
+				cali-gain0 = <0>;
+				cali-gain2 = <0>;
+
+				status = "okay";								
+			};
+
+			pulsec@10d90000 {
+				compatible = "sirf,prima2-pulsec";
+				reg = <0x10d90000 0xffff>;
+				clocks = <&car 96>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&ps_no_dir_pmx>;
+				status = "okay";
+			};
+
+			audiom:audiom@10ED0000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x10ED0000 0x4000>;
+				interrupts = <0 102 0>;
+				clocks = <&car 74>, <&car 80>,
+					<&car 95>, <&car 0>,
+					<&car 82>, <&car 75>,
+					<&car 26>;
+				clock-names = "dmac2_kas",
+					"dmac3_kas", "cvd_io",
+					"audmscm_kas", "kas_kas",
+					"usp0_kas", "audmscm_nocd";
+				regofs = <&audiom 0xc00 0x400 0x2050 0x8000>;
+
+				qos {
+					dmac2 {
+						offset = <0x500>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "dmac2_kas";
+					};
+
+					dmac3 {
+						offset = <0x580>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "dmac3_kas";
+					};
+
+					audio_afe_cvd_vip0 {
+						offset = <0x700>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "cvd_io";
+					};
+
+					kas_apb {
+						offset = <0x780>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "kas_kas";
+					};
+
+					kas_axi {
+						offset = <0xa00>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "kas_kas";
+					};
+
+					usp0_axi {
+						offset = <0xa80>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "usp0_kas";
+					};
+				};
+
+				bw_probe {
+					vip0 {
+						offset = <0>;
+						clock_name = "cvd_io";
+					};
+
+					dmac2 {
+						offset = <0x3000>;
+						port = <1>;
+						clock_name = "dmac2_kas";
+
+					};
+
+					dmac3 {
+						offset = <0x3000>;
+						port = <0>;
+						clock_name = "dmac3_kas";
+					};
+
+					kas {
+						offset = <0x3000>;
+						port = <3>;
+						clock_name = "audmscm_nocd";
+					};
+
+					usp0 {
+						offset = <0x3000>;
+						port = <2>;
+						clock_name = "audmscm_nocd";
+					};
+				};
+			};
+
+			usp0: usp@10d20000 {
+				compatible = "sirf,prima2-usp-pcm";
+				frame-syn-mode = "i2s";
+				#sound-dai-cells = <0>;
+				cell-index = <0>;
+				reg = <0x10d20000 0x1000>;
+				fifosize = <512>;
+				interrupts = <0 20 0>;
+				clocks = <&car 75>;
+				dmas = <&dmac2 10>, <&dmac2 11>;
+				dma-names = "rx", "tx";
+				pinctrl-names = "default";
+				pinctrl-0 = <&audio_uart0_basic_pmx>;
+				status = "okay";
+			};
+
+			usp1: usp@10d30000 {
+				compatible = "sirf,atlas7-usp-spi";
+				pinctrl-names = "default";
+				pinctrl-0 = <&audio_uart1_basic_pmx>;
+				cell-index = <1>;
+				reg = <0x10d30000 0x1000>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				cs-gpios = <&gpio_1 97 0
+						&gpio_1 122 0>;
+				fifosize = <512>;
+				interrupts = <0 21 0>;
+				clocks = <&car 76>;
+				dmas = <&dmac2 6>, <&dmac2 7>;
+				dma-names = "rx", "tx";
+				status = "okay";
+				
+				spidev@0 {
+					compatible = "spidev";
+					reg = <0>;
+					spi-max-frequency = <1000000>;
+					spi-cpha;
+					spi-cpol;
+				};
+				spidev@1 {
+					compatible = "spidev";
+					reg = <1>;
+					spi-max-frequency = <1000000>;
+					spi-cpha;
+					spi-cpol;
+				};
+			};
+
+			usp2: usp@10d40000 {
+				cell-index = <2>;
+				reg = <0x10d40000 0x1000>;
+				interrupts = <0 22 0>;
+				clocks = <&car 77>;
+				dmas = <&dmac2 12>, <&dmac2 13>;
+				dma-names = "rx", "tx";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				status = "disabled";
+			};
+
+			analog_regulator: analog_regulator@10E30000 {
+				compatible = "sirf,atlas7-analog-ldo";
+				reg = <0x10E30000 0x100>;
+				clocks = <&car 85>;
+				status = "okay";
+
+				ldo0: ldo0 {
+					regulator-name = "ldo0";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+				};
+				ldo1: ldo1 {
+					regulator-name = "ldo1";
+					regulator-min-microvolt = <2500000>;
+					regulator-max-microvolt = <2500000>;
+				};
+				ldo2: ldo2 {
+					regulator-name = "ldo2";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+				};
+			};
+
+			atlas7_codec: atlas7_codec@10E30000 {
+				#sound-dai-cells = <0>;
+				compatible = "sirf,atlas7-codec";
+				reg = <0x10E30000 0x400>;
+				clocks = <&audioclk 0>;
+				ldo-supply = <&ldo0>, <&ldo1>;
+				status = "okay";
+			};
+
+			audioclk: clock-controller@10E30000 {
+				compatible = "sirf,atlas7-audioclk";
+				reg = <0x10E30000 0x400>;
+				#clock-cells = <1>;
+			};
+
+			atlas7_iacc: atlas7_iacc@10D01000 {
+				#sound-dai-cells = <0>;
+				compatible = "sirf,atlas7-iacc";
+				reg = <0x10D01000 0x100>;
+				dmas = <&dmac3 0>, <&dmac3 7>, <&dmac3 8>,
+					<&dmac3 3>, <&dmac3 9>;
+				dma-names = "rx", "tx0", "tx1", "tx2", "tx3";
+				clocks = <&car 83>;
+				status = "disabled";
+			};
+
+			key_comparator@10E30030 {
+				compatible = "sirf,atlas7-key-comparator";
+				reg = <0x10E30030 0x8>;
+			};
+		};
+
+		ddrm {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x10820000 0x10820000 0x3000>,
+					<0x10800000 0x10800000 0x2000>;
+			ddrm:ddrm@10820000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x10820000 0x3000>;
+				interrupts = <0 105 0>;
+				clocks = <&car 123>;
+				clock-names = "memc_mem";
+				regofs = <&ddrm 0x180 0x800 0x2050 0>;
+
+				qos {
+					ddr_bist {
+						offset = <0x200>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "memc_mem";
+					};
+				};
+
+				bw_probe {
+					ddrm {
+						offset = <0x400>;
+						clock_name = "memc_mem";
+					};
+				};
+			};
+
+			memory-controller@0x10800000 {
+				compatible = "sirf,atlas7-memc";
+				reg = <0x10800000 0x2000>;
+			};
+
+		};
+
+		btm {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x11002000 0x11002000 0x0000ffff>,
+			       <0x11010000 0x11010000 0x3000>,
+			       <0x11000000 0x11000000 0x1000>,
+			       <0x11001000 0x11001000 0x1000>,
+			       <0x11003000 0x11003000 0x1000>,
+			       <0x11040000 0x11040000 0x1000>;
+
+			dmac4: dma-controller@11002000 {
+				cell-index = <4>;
+				compatible = "sirf,atlas7-dmac";
+				reg = <0x11002000 0x1000>;
+				interrupts = <0 99 0>;
+				clocks = <&car 136>;
+				dma-channels = <16>;
+				#dma-cells = <1>;
+			};
+
+			ntfw_dmac4: ntfw_dmac4@11040000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x11040000 0x1000>;
+			};
+
+			uart6: uart@11000000 {
+				cell-index = <6>;
+				compatible = "sirf,atlas7-uart";
+				reg = <0x11000000 0x1000>;
+				interrupts = <0 100 0>;
+				clocks = <&car 137>;
+				clock-names = "uart";
+				fifosize = <128>;
+				dmas = <&dmac4 12>, <&dmac4 13>;
+				dma-names = "rx", "tx";
+				sirf,uart-has-rtscts;
+				status = "okay";
+			};
+
+			usp3: usp@11001000 {
+				compatible = "sirf,atlas7-bt-usp",
+					   "sirf,prima2-usp-pcm";
+				cell-index = <3>;
+				#sound-dai-cells = <0>;
+				reg = <0x11001000 0x1000>;
+				fifosize = <512>;
+				clocks = <&car 138>, <&car 135>, <&car 139>;
+				clock-names = "usp3_io", "a7ca_btss", "a7ca_io";
+				dmas = <&dmac4 0>, <&dmac4 1>;
+				dma-names = "rx", "tx";
+				status = "okay";
+			};
+
+			a7ca: a7ca_bt@11003000 {
+				compatible = "sirf,a7ca_bt";
+				clocks = <&car 135>, <&car 134>, <&car 139>,
+					<&car 85>;
+				clock-names="a7ca_btss","a7ca_btslow",
+					"a7ca_io","analogtest_xin";
+				reg = <0x11003000 0x1000>;
+			};
+
+			btm:btm@11010000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x11010000 0x3000>;
+				interrupts = <0 103 0>;
+				clocks = <&car 140>, <&car 137>;
+				clock-names = "nocm", "uart6_io";
+				regofs = <&btm 0 0x200 0x1050 0x8000>;
+
+				qos {
+					uart6_io {
+						offset = <0x000>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000707>;
+						mode = <0>;
+						clock_name = "uart6_io";
+					};
+				};
+
+				bw_probe {
+					uart6_io {
+						offset = <0x400>;
+						clock_name = "uart6_io";
+					};
+				};
+			};
+		};
+
+		rtcm {
+			compatible = "arteris, flexnoc", "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x18810000 0x18810000 0x3000>,
+				<0x18840000 0x18840000 0x1000>,
+				<0x18890000 0x18890000 0x1000>,
+				<0x188B0000 0x188B0000 0x10000>,
+				<0x188D0000 0x188D0000 0x1000>,
+				<0x18A00000 0x18A00000 0x100>;
+			rtcm:rtcm@18810000 {
+				compatible = "sirf,noc-macro";
+				reg = <0x18810000 0x3000>;
+				interrupts = <0 109 0>;
+				clocks = <&rtcmclk 1>;
+				clock-names = "rtc_fastclk";
+				regofs = <&rtcm 0xa00 0x900 0x2050 0x4000>;
+				status = "disabled";
+
+				qos {
+					armm3_axi {
+						offset = <0x000>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "rtc_fastclk";
+					};
+
+					hash {
+						offset = <0x080>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "rtc_fastclk";
+					};
+
+					qspi {
+						offset = <0x100>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "rtc_fastclk";
+					};
+
+					cssi_system_axi {
+						offset = <0x180>;
+						bw = <0>;
+						saturation = <0x40>;
+						priority = <0x00000404>;
+						mode = <0>;
+						clock_name = "rtc_fastclk";
+					};
+				};
+			};
+
+			gpio_2: gpio_rtcm@18890000 {
+				#gpio-cells = <2>;
+				#interrupt-cells = <2>;
+				compatible = "sirf,atlas7-gpio";
+				reg = <0x18890000 0x1000>;
+				interrupts = <0 47 0>;
+				gpio-controller;
+				interrupt-controller;
+				status = "disabled";
+
+				gpio-banks = <1>;
+				gpio-ranges = <&pinctrl 0 0 0>;
+				gpio-ranges-group-names = "rtc_gpio_grp";
+			};
+
+			ntfw_gpio_2: ntfw_gpio_2@18A00000 {
+				compatible = "sirf,atlas7-ntfw";
+				reg = <0x18A00000 0x100>;
+			};
+
+			rtc-iobg@18840000 {
+				compatible = "sirf,prima2-rtciobg",
+					"sirf-prima2-rtciobg-bus",
+					"simple-bus";
+				#address-cells = <1>;
+				#size-cells = <1>;
+				reg = <0x18840000 0x1000>;
+
+				hwlocks = <&hwlock_retain 0>;
+
+				pwrc:pwrc@3000 {
+					compatible = "sirf,atlas7-pwrc";
+					sub-reg = <0x3000 0x100>;
+					interrupts = <0 32 0>;
+					interrupt-controller;
+					#interrupt-cells = <2>;
+					rtcmclk: clock-controller {
+						compatible = "sirf,atlas7-rtcmclk";
+						#clock-cells = <1>;
+					};
+
+					sysctl {
+						compatible = "sirf,sirf-sysctl";
+						/*core-supply = <&vdd_core>;*/
+					};
+
+					onkey {
+						compatible = "sirf,prima2-onkey";
+						interrupt-parent = <&pwrc>;
+						interrupts = <0 0>, <1 0>;
+					};
+
+					atlas7-gps {
+						compatible = "sirf,atlas7-gps";
+						clocks = <&car 108>;
+						resets = <&car 108>;
+						interrupt-parent = <&pwrc>;
+						interrupts = <5 0>, <6 0>,
+							<7 0>, <8 0>;
+						gps-int-gpio = <&gpio_1 89 0>;
+						memory-region = <&cm3_reserved>;
+						mem-offset = <0xe0000>;
+						mem-size = <0x10000>;
+						pinctrl-names = "default";
+						pinctrl-0 = <&gn_trg_spi_pmx0
+								&gn_trg_pmx0>;
+						//gps-supply = <&gnss_supply>;
+						status = "okay";
+					};
+				};
+
+				sysrtc@2000 {
+					compatible = "sirf,prima2-sysrtc";
+					sub-reg = <0x2000 0x100>;
+					interrupts = <0 52 0>;
+				};
+			};
+
+			qspi: flash@188B0000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-qspi-nor";
+				reg = <0x188B0000 0x10000>;
+				interrupts = <0 15 0>;
+				clocks = <&rtcmclk 1>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&sp0_qspi_pmx>;
+				clock-rate = <20000000>;        /* 20MHz */
+				status = "okay";
+			};
+
+			retain@0x188D0000 {
+				compatible = "sirf,atlas7-retain";
+				reg = <0x188D0000 0x1000>;
+			};
+
+			hwlock_retain: hwlock@0 {
+				compatible = "sirf,hwspinlock";
+				reg = <0x188D0074 0x020>;
+				#hwlock-cells = <1>;
+				base-id = <0>;
+				num-spinlocks = <8>;
+			};
+		};
+
+		disp-iobg {
+			/* lcdc0 */
+			compatible = "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x13100000 0x13100000 0x20000>,
+				<0x13120000 0x13120000 0x20000>,
+				<0x10E50008 0x10E50008 0x00008>,
+				<0x10e10000 0x10e10000 0x10000>,
+				<0x17010000 0x17010000 0x10000>,
+				<0x13220000 0x13220000 0x10000>,
+				<0x132c0000 0x132c0000 0x10000>;
+
+			lcd0@13100000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-lcdc";
+				reg = <0x13100000 0x10000>;
+				interrupts = <0 30 0>;
+				clocks = <&car 90>;
+				resets = <&car 90>;
+				error-diffusion = <1>;
+				status = "okay";
+			};
+			vpp0@13110000 {
+				cell-index = <0>;
+				compatible = "sirf,atlas7-vpp";
+				reg = <0x13110000 0x10000>;
+				interrupts = <0 31 0>;
+				clocks = <&car 89>;
+				resets = <&car 89>;
+			};
+			lcd1@13120000 {
+				cell-index = <1>;
+				compatible = "sirf,atlas7-lcdc";
+				reg = <0x13120000 0x10000>;
+				interrupts = <0 62 0>;
+				clocks = <&car 92>;
+				resets = <&car 92>;
+				error-diffusion = <1>;
+			};
+			vpp1@13130000 {
+				cell-index = <1>;
+				compatible = "sirf,atlas7-vpp";
+				reg = <0x13130000 0x10000>;
+				interrupts = <0 65 0>;
+				clocks = <&car 91>;
+				resets = <&car 91>;
+			};
+			lvds@10e10000 {
+				compatible = "sirf,atlas7-lvdsc";
+				reg = <0x10e10000 0x10000>,
+				      <0x10E50008 0x00008>;
+				interrupts = <0 64 0>;
+				clocks = <&car 96>;
+				resets = <&car 96>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&lvds_analog_pmx>;
+				/* set to SYN or SLAVE for lvds panel */
+				lvds-mode = "SLAVE";
+				status = "okay";
+			};
+			g2d@17010000 {
+				compatible = "sirf, atlas7-g2d";
+				reg = <0x17010000 0x10000>;
+				interrupts = <0 61 0>;
+				clocks = <&car 133>;
+			};
+			dcu@13220000 {
+				compatible = "sirf,atlas7-dcu";
+				reg = <0x13220000 0x10000>,
+				    <0x132c0000 0x10000>;
+				interrupts = <0 96 0>;
+				clocks = <&car 93>;
+			};
+		};
+
+		graphics-iobg {
+			compatible = "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x12000000 0x12000000 0x1000000>;
+
+			graphics@12000000 {
+				compatible = "powervr,sgx531";
+				reg = <0x12000000 0x1000000>;
+				interrupts = <0 6 0>;
+				clocks = <&car 130>;
+				resets = <&car 72>;
+			};
+		};
+
+		rgb: display@0 {
+			compatible = "rgb-panel";
+			source = "rgb.0";
+			status = "disabled";
+			pinctrl-names = "default";
+			pinctrl-0 = <&ld_ldd_16bit_pmx &ld_ldd_fck_pmx
+					&ld_ldd_lck_pmx>;
+
+			data-lines  = <16>;
+
+			display-timings {
+				native-mode = <&timing0>;
+				timing0: timing0 {
+					clock-frequency = <40000000>;
+					hactive = <800>;
+					vactive = <480>;
+					hfront-porch = <210>;
+					hback-porch = <45>;
+					hsync-len = <1>;
+					vback-porch = <22>;
+					vfront-porch = <132>;
+					vsync-len = <1>;
+					hsync-active = <0>;
+					vsync-active = <0>;
+					de-active = <1>;
+					pixelclk-active = <1>;
+				};
+			};
+		};
+		
+		lvds: display@1 {
+			compatible = "lvds-panel";
+			source = "lvds.0";
+			status = "okay";
+
+			data-lines  = <24>;
+
+			display-timings {
+				native-mode = <&timing1>;
+				timing1: timing1 {
+
+					clock-frequency = <33300000>;
+					hactive = <800>;
+					vactive = <480>;
+					hfront-porch = <204>;//
+					hback-porch = <43>;
+					hsync-len = <1>;
+					vback-porch = <23>;
+					vfront-porch = <22>;
+					vsync-len = <1>;
+					hsync-active = <0>;
+					vsync-active = <0>;
+					de-active = <1>;
+					pixelclk-active = <1>;
+
+				};
+			};
+		};
+
+		hdmi: display@2 {
+			compatible = "hdmi-panel";
+			source = "rgb.0";
+			/*status = "okay";*/
+			status = "disabled";
+			pinctrl-names = "default";
+			pinctrl-0 = <&ld_ldd_16bit_pmx &ld_ldd_fck_pmx
+				&ld_ldd_lck_pmx>;
+
+			data-lines  = <16>;
+
+			display-timings {
+				native-mode = <&timing2>;
+				timing2: timing2 {
+					clock-frequency = <74250000>;
+					hactive = <1280>;
+					vactive = <720>;
+					hfront-porch = <110>;
+					hback-porch = <220>;
+					hsync-len = <40>;
+					vback-porch = <19>;
+					vfront-porch = <5>;
+					vsync-len = <6>;
+					hsync-active = <0>;
+					vsync-active = <0>;
+					de-active = <1>;
+					pixelclk-active = <1>;
+				};
+			};
+		};
+
+		sirf-backlight {
+			compatible = "pwm-backlight";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pw_backlight_pmx1>;
+			pwms = <&pwm 3 50000>;	
+			//brightness-levels = <0 95 109 112 118 125 130 135 140 145 155 165 175 182 192 255>;
+			//brightness-levels = <0 131 136 141 146 152 157 163 168 174 180 186 192 198 205 255>;
+			brightness-levels = <0 122 131 136 141 146 152 157 163 168 174 180 186 192 198 205 255>;
+			default-brightness-level = <11>;
+		};
+		
+		 buzzer {
+			compatible = "pwm-beeper";
+			pwms = <&pwm 2 1000000>;
+		
+	  	};
+		
+		gpio_keys {
+			compatible = "gpio-keys";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			rearview_key {
+				label = "rearview key";
+				linux,code = <KEY_CAMERA>;
+				gpios = <&gpio_1 56 GPIO_ACTIVE_LOW>;
+				debounce-interval = <5>;
+			};
+		};
+
+		sirf-rearview {
+			compatible = "sirf,rearview";
+			status = "okay";
+			interrupts = <0 126 0>; /* IPC */
+			reg = <0x1324020C 0x4>, /* IPC INT */
+			     <0x188D001C 0x4>;  /* IPC MSG */
+			mirror = <0>;
+			source-std = "AUTO";		/* NTSC or PAL */
+			display-panel = "display0";	/* display 0/1 */
+		};
+		
+		audio_switcher{
+			compatible = "gpio-74HC4052";
+			SW_A = <&gpio_1 48 0>;  /* ldd_1 */
+			SW_B = <&gpio_1 47 0>;  /* ldd_0 */
+			SW_INT = <&gpio_1 58 0>;  
+		};
+		
+		usb_switch{
+			compatible = "gpio-TPS2549";
+			pinctrl-names = "default";
+			pinctrl-0 = < &sample4_cfg >;
+			STATUS = <&gpio_1 99 0>; 
+			CTL    = <&gpio_1 105 0>;  				
+		};
+
+		usb_set_power{
+			compatible = "usb-set-power";
+			PWR_EN = <&gpio_1 62 0>;
+		};
+
+		wifi{
+			compatible 		  = "wifi,bcm_wlan";
+			pinctrl-names 	  = "default";
+			wifi,gpio_wl_pwr 	   = <&gpio_1 36  0>; //36
+			wifi,gpio_wl_reg_on    = <&gpio_1 78  0>; //78 
+			wifi,gpio_wl_host_wake = <&gpio_1 79  0>; //79 				
+		};		
+	};
+};

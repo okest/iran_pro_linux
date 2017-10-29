@@ -1,0 +1,10 @@
+menuconfig USB_PATCH
+        tristate "usb_power_patch"
+        help
+         this is usb_power_patch 
+
+config  USB_PWOER_PATCH
+        tristate "patch For rn4y56"
+        depends on USB_PATCH
+        help
+         this is USB_PATCH

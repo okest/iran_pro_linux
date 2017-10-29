@@ -1,0 +1,31 @@
+CSR Atlas7 internal LDO regulator
+
+Required properties:
+- compatible: "sirf,atlas7-analog-ldo"
+- reg: register phyical address
+- ldo: A node that houses a sub-node for the ldo regulator within the
+  device.
+  The content of each sub-node is defined by the standard binding for
+  regulators; see regulator.txt.
+
+Example:
+	analog_regulator: analog_regulator@10E30000 {
+		compatible = "sirf,atlas7-analog-ldo";
+		status = "disabled";
+		reg = <0x10E30000 0x100>;
+		ldo0: ldo0 {
+			regulator-name = "ldo0";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+		};
+		ldo1: ldo1 {
+			regulator-name = "ldo1";
+			regulator-min-microvolt = <2500000>;
+			regulator-max-microvolt = <2500000>;
+		};
+		ldo2: ldo2 {
+			regulator-name = "ldo2";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+		};
+	};

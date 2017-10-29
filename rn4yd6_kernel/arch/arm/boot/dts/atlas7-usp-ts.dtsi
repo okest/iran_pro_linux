@@ -1,0 +1,50 @@
+/*
+ * DTS file for CSR SiRFatlas7 SoC USP TS port
+ *
+ * Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/ {
+	noc {
+		audiom {
+			usp0: usp@10d20000 {
+				compatible = "sirf,atlas7-usp_ts";
+				status = "okay";
+				pinctrl-0 = <&audio_uart0_basic_pmx>;
+				pinctrl-names = "default";
+			};
+
+
+			usp1: usp@10d30000 {
+				compatible = "sirf,atlas7-usp_ts";
+				status = "okay";
+				pinctrl-0 = <&audio_uart1_basic_pmx>;
+				pinctrl-names = "default";
+			};
+
+			usp2: usp@10d40000 {
+				compatible = "sirf,atlas7-usp_ts";
+				status = "okay";
+				pinctrl-0 = <&audio_uart2_urfs_pmx2
+					&audio_uart2_urxd_pmx2
+					&audio_uart2_usclk_pmx2
+					&audio_uart2_utfs_pmx2
+					&audio_uart2_utxd_pmx2>;
+				pinctrl-names = "default";
+			};
+
+			dmac2: dma-controller@10d50000 {
+				status = "okay";
+			};
+		};
+	};
+};

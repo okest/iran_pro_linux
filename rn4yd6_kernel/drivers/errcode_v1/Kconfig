@@ -1,0 +1,10 @@
+menuconfig ERRCODE
+        tristate "linux err_code"
+        help
+         this is simple errcode 
+
+config  LINUX_ERR_CODE
+        tristate "errcode For rn4y56"
+        depends on ERRCODE
+        help
+         this is simple errcode
