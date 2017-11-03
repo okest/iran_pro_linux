@@ -2744,6 +2744,16 @@
 				//	goodix,irq-gpio   = <&gpio_1 50 0>; // ldd_3
 				//	reg = <0x5d>;
 				//};
+				touch@4b { 
+					compatible = "atmel,maxtouch";
+					reg = <0x4b>;
+					//interrupt-parent = <&gpio>;
+					//interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>; 
+					interrupt-parent = <&gpio_1>;
+					interrupts = <&104 0x02>;//下降沿触发
+					atmel,reset-gpio = <&gpio_1 103 0>; //  RGMII_TXD[1]
+					//MXT,IRQ-gpio = <&gpio_1 104 0>; // RGMII_TXD[2]
+				}; 
 			};	
 			
 			i2c2: i2c2@2 {
