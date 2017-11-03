@@ -47,6 +47,7 @@
 #define LOGD(fmt...) 
 #endif
 
+int mxt_int_pin;// add rxhu
 /* Configuration file */
 #define MXT_CFG_MAGIC		"OBP_RAW V1"
 
@@ -3524,6 +3525,8 @@ static const struct mxt_platform_data *mxt_parse_dt(struct i2c_client *client)
 
 	pdata->gpio_reset = of_get_named_gpio_flags(np, "atmel,reset-gpio",
 						    0, NULL);
+	mxt_int_pin = of_get_named_gpio_flags(np, "atmel,int-gpio",
+						    0, NULL);
 														
 	of_property_read_string(np, "atmel,cfg_name", &pdata->cfg_name);
 
@@ -3548,7 +3551,7 @@ static const struct mxt_platform_data *mxt_parse_dt(struct i2c_client *client)
 	}
 
 	of_property_read_u32(np, "atmel,suspend-mode", &pdata->suspend_mode);
-	LOGD("pdata->gpio_reset = %d",pdata->gpio_reset);//add rxhu
+	LOGD("pdata->gpio_reset = %d mxt_int_pin = %d",pdata->gpio_reset,mxt_int_pin);//add rxhu
 
 	return pdata;
 }
@@ -3775,6 +3778,8 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #if defined(CONFIG_FORYOU_CSR)
 	mxt_ResetChip(pdata->gpio_reset);
 #endif
+	gpio_direction_input(mxt_int_pin);//add rxhu
+	
 	LOGD("start mxt_initialize device");
 	error = mxt_initialize(data);
 	if (error)
