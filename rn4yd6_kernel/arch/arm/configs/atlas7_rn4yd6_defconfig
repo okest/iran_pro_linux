@@ -1065,11 +1065,9 @@ CONFIG_WLAN=y
 # CONFIG_MWIFIEX is not set
 # CONFIG_CW1200 is not set
 # CONFIG_RSI_91X is not set
-CONFIG_BCMDHD=y
-CONFIG_BCMDHD_FW_PATH="/system/etc/firmware/fw_bcmdhd.bin"
-CONFIG_BCMDHD_NVRAM_PATH="/system/etc/firmware/nvram.txt"
-CONFIG_BCMDHD_SDIO=y
-CONFIG_BCMDHD_OOB=y
+# CONFIG_BCMDHD is not set
+# CONFIG_BCMDHD_SDIO is not set
+# CONFIG_BCMDHD_OOB is not set
 # CONFIG_BCMDHD_SDIO_IRQ is not set
 
 #
