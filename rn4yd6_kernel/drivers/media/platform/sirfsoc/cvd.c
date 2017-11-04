@@ -1447,7 +1447,7 @@ static int cvd_probe(struct platform_device *pdev)
 
 	dec->dev = dev;
 	
-	cvd_parse_dts(dev);
+	//cvd_parse_dts(dev);  you can not use this 
 	
 	init_completion(&dec->skip_done);
 	init_completion(&dec->locked_done);
