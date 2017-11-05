@@ -39,6 +39,8 @@
 #define CONFIG_FORYOU_CSR
 #endif
 
+//#define SWAP_X_Y//add rxhu
+
 #define DEBUG
 
 #ifdef DEBUG 
@@ -1101,10 +1103,15 @@ static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 		return;
 
 	status = message[1];
+#ifdef SWAP_X_Y
+	y = get_unaligned_le16(&message[2]);
+	x = get_unaligned_le16(&message[4]);
+#else
 	x = get_unaligned_le16(&message[2]);
 	y = get_unaligned_le16(&message[4]);
-	
-#if defined(CONFIG_FORYOU_CSR)
+#endif	
+//#if defined(CONFIG_FORYOU_CSR)
+#if 0
 	//rotate 180 degree to match lcd display
 	x = (data->max_x >= x) ? (data->max_x - x) : 0;
 	y = (data->max_y >= y) ? (data->max_y - y) : 0;
@@ -1984,6 +1991,7 @@ static int mxt_acquire_irq(struct mxt_data *data)
 		/* Presence of data->irq means IRQ initialised */
 		data->irq = data->client->irq;
 	} else {
+		LOGD("Now enable the irq hei hei");
 		enable_irq(data->irq);
 	}
 
@@ -2043,7 +2051,7 @@ static int mxt_parse_object_table(struct mxt_data *data,
 	int i;
 	u8 reportid;
 	u16 end_address;
-
+	LOGD("mxt_parse_object_table is begin");
 	/* Valid Report IDs start counting from 1 */
 	reportid = 1;
 	data->mem_size = 0;
@@ -2086,6 +2094,7 @@ static int mxt_parse_object_table(struct mxt_data *data,
 			data->T5_address = object->start_address;
 			break;
 		case MXT_GEN_COMMAND_T6:
+			LOGD("come to the MXT_GEN_COMMAND_T6 init");
 			data->T6_reportid = min_id;
 			data->T6_address = object->start_address;
 			break;
@@ -2096,6 +2105,7 @@ static int mxt_parse_object_table(struct mxt_data *data,
 			data->T71_address = object->start_address;
 			break;
 		case MXT_TOUCH_MULTI_T9:
+			LOGD("come to the MXT_TOUCH_MULTI_T9 init");
 			data->multitouch = MXT_TOUCH_MULTI_T9;
 			/* Only handle messages from first T9 instance */
 			data->T9_reportid_min = min_id;
@@ -2542,10 +2552,10 @@ static int mxt_initialize_input_device(struct mxt_data *data)
 
 	/* Handle default values and orientation switch */
 	if (data->max_x == 0)
-		data->max_x = 1023;
+		data->max_x = 800;
 
 	if (data->max_y == 0)
-		data->max_y = 1023;
+		data->max_y = 480;
 
 	if (data->xy_switch)
 		swap(data->max_x, data->max_y);
@@ -3432,6 +3442,7 @@ static int mxt_stop(struct mxt_data *data)
 	switch (data->pdata->suspend_mode) {
 	case MXT_SUSPEND_T9_CTRL:
 		/* Touch disable */
+		LOGD("MXT_SUSPEND_T9_CTRL");
 		ret = mxt_write_object(data,
 				MXT_TOUCH_MULTI_T9, MXT_T9_CTRL, 0);
 		if (ret)
@@ -3440,6 +3451,7 @@ static int mxt_stop(struct mxt_data *data)
 		break;
 
 	case MXT_SUSPEND_REGULATOR:
+		LOGD("MXT_SUSPEND_REGULATOR");
 		disable_irq(data->irq);
 		mxt_regulator_disable(data);
 		mxt_reset_slots(data);
@@ -3447,6 +3459,7 @@ static int mxt_stop(struct mxt_data *data)
 
 	case MXT_SUSPEND_DEEP_SLEEP:
 	default:
+		LOGD("MXT_SUSPEND_REGULATOR");
 		disable_irq(data->irq);
 
 		ret = mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
@@ -3551,7 +3564,8 @@ static const struct mxt_platform_data *mxt_parse_dt(struct i2c_client *client)
 	}
 
 	of_property_read_u32(np, "atmel,suspend-mode", &pdata->suspend_mode);
-	LOGD("pdata->gpio_reset = %d mxt_int_pin = %d",pdata->gpio_reset,mxt_int_pin);//add rxhu
+	LOGD("pdata->gpio_reset = %ld mxt_int_pin = %ld",pdata->gpio_reset,mxt_int_pin);//add rxhu
+	LOGD("pdata->suspend_mode = %d",pdata->suspend_mode);//add rxhu
 
 	return pdata;
 }
@@ -3784,6 +3798,28 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	error = mxt_initialize(data);
 	if (error)
 		goto err_free_irq;
+	LOGD("data->suspended = %d , data->in_bootloader = %d",data->suspended,data->in_bootloader);
+	
+	//add rxhu
+		LOGD("data->suspended = %d",data->suspended);
+		mxt_process_messages_until_invalid(data);
+
+		error = mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
+		LOGD("mxt_set_t7_power_cfg = %d",error);
+		if (error)
+			return error;
+
+		/* Recalibrate since chip has been in deep sleep */
+		error = mxt_t6_command(data, MXT_COMMAND_CALIBRATE, 1, false);
+		LOGD("mxt_t6_command = %d",error);
+		if (error)
+			return error;
+
+		error = mxt_acquire_irq(data);
+		LOGD("mxt_acquire_irq = %d",error);
+		if (error)
+			return error;
+	//end add
 
 	return 0;
 

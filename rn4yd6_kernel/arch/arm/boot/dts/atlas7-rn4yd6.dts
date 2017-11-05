@@ -2337,7 +2337,7 @@
 				pinctrl-0 = <&uart3_rxd_pmx0
 						&uart3_txd_pmx0>;
 				//status = "disabled";
-				status = "okay";
+				status = "ok";
 			};
 
 
@@ -2750,9 +2750,10 @@
 					//interrupt-parent = <&gpio>;
 					//interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>; 
 					interrupt-parent = <&gpio_1>;
-					interrupts = <104 0x02>;//下降沿触发
-					atmel,reset-gpio = <&gpio_1 103 0>; //  RGMII_TXD[1]
-					atmel,int-gpio = <&gpio_1 104 0>; // RGMII_TXD[2] note: the input pin
+					interrupts = <98 0x02>;//下降沿触发
+					atmel,reset-gpio = <&gpio_1 97 0>; //  RGMII_TXD[1]
+					atmel,int-gpio = <&gpio_1 98 0>;
+					atmel,suspend-mode = "2";// RGMII_TXD[2] note: the input pin
 				}; 
 			};	
 			
