@@ -1206,9 +1206,12 @@ struct atlas7_pin_group altas7_pin_groups[] = {
 	GROUP("gn_trg_shutdown_grp2", gn_trg_shutdown_pins2),
 	GROUP("gn_trg_shutdown_grp3", gn_trg_shutdown_pins3),
 	GROUP("i2c0_grp", i2c0_pins),
-#ifndef CONFIG_FORYOU_RN4Y56
-	GROUP("i2c1_grp", i2c1_pins),
-#endif
+//#ifndef CONFIG_FORYOU_RN4Y56
+//	GROUP("i2c1_grp", i2c1_pins),
+//#endif
+
+	GROUP("i2c1_grp", i2c1_pins),   //add zjc 
+
 	GROUP("i2s0_grp", i2s0_pins),
 	GROUP("i2s1_basic_grp", i2s1_basic_pins),
 	GROUP("i2s1_rxd0_grp0", i2s1_rxd0_pins0),
@@ -4808,9 +4811,12 @@ static struct atlas7_pmx_func atlas7_pmx_functions[] = {
 			&gn_trg_shutdown_grp3_mux),
 	FUNCTION("i2c0", i2c0_grp, &i2c0_grp_mux),
 	
-#ifndef CONFIG_FORYOU_RN4Y56
-	FUNCTION("i2c1", i2c1_grp, &i2c1_grp_mux),
-#endif
+//#ifndef CONFIG_FORYOU_RN4Y56
+//	FUNCTION("i2c1", i2c1_grp, &i2c1_grp_mux),
+//#endif
+
+	FUNCTION("i2c1", i2c1_grp, &i2c1_grp_mux), //add zjc
+
 	FUNCTION("i2s0", i2s0_grp, &i2s0_grp_mux),
 	FUNCTION("i2s1_basic", i2s1_basic_grp, &i2s1_basic_grp_mux),
 	FUNCTION("i2s1_rxd0_m0", i2s1_rxd0_grp0, &i2s1_rxd0_grp0_mux),
