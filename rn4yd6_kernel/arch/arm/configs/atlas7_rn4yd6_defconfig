@@ -1066,9 +1066,6 @@ CONFIG_WLAN=y
 # CONFIG_CW1200 is not set
 # CONFIG_RSI_91X is not set
 # CONFIG_BCMDHD is not set
-# CONFIG_BCMDHD_SDIO is not set
-# CONFIG_BCMDHD_OOB is not set
-# CONFIG_BCMDHD_SDIO_IRQ is not set
 
 #
 # Enable WiMAX (Networking options) to see the WiMAX drivers
@@ -1192,7 +1189,7 @@ CONFIG_INPUT_MISC=y
 # CONFIG_INPUT_UINPUT is not set
 # CONFIG_INPUT_GPIO is not set
 # CONFIG_INPUT_PCF8574 is not set
-CONFIG_INPUT_PWM_BEEPER=y
+# CONFIG_INPUT_PWM_BEEPER is not set
 # CONFIG_INPUT_GPIO_ROTARY_ENCODER is not set
 # CONFIG_INPUT_ADXL34X is not set
 # CONFIG_INPUT_CMA3000 is not set
