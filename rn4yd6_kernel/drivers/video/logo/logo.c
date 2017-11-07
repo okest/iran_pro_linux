@@ -20,6 +20,7 @@
 
 extern const struct linux_logo logo_rn4y56_clut224;
 extern const struct linux_logo logo_rm4yc5_clut224;
+#define CONFIG_LOGO_RN4Y56_CLUT224
 
 static bool nologo;
 module_param(nologo, bool, 0);
