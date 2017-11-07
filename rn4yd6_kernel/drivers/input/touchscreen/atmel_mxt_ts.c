@@ -45,14 +45,11 @@
 
 #ifdef DEBUG 
 #define LOGD(format,...)    printk(KERN_INFO "rxhu:[func:%s][Line:%d] "format"\n",__FUNCTION__, __LINE__,##__VA_ARGS__)
-#define LOG_ERR(format,...)    printk(KERN_ERR "rxhu:[func:%s][Line:%d] "format"\n",__FUNCTION__, __LINE__,##__VA_ARGS__)
 #else 
 #define LOGD(fmt...) 
-#define LOG_ERR(format,...)
 #endif
 
 int mxt_int_pin;// add rxhu
-//static unsigned int down_speed = 0;
 /* Configuration file */
 #define MXT_CFG_MAGIC		"OBP_RAW V1"
 
@@ -996,9 +993,7 @@ static void mxt_input_sync(struct mxt_data *data)
 	if (data->input_dev) {
 		input_mt_report_pointer_emulation(data->input_dev,
 				data->pdata->t19_num_keys);
-		//input_mt_sync(data->input_dev);//add rxhu
-		input_sync(data->input_dev);//delete by rxhu
-		
+		input_sync(data->input_dev);
 	}
 }
 
@@ -1209,9 +1204,9 @@ static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 	 */
 	if (!pressure && !hover)
 		pressure = MXT_PRESSURE_DEFAULT;
-
-	input_mt_slot(input_dev, id);//delete by rxhu
-
+#if 0
+	input_mt_slot(input_dev, id);
+#endif
 	if (active) {
 		dev_dbg(dev, "[%u] type:%u x:%u y:%u a:%02X p:%02X v:%02X\n",
 			id, type, x, y, major, pressure, orientation);
@@ -1223,22 +1218,17 @@ static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 		input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
 		input_report_abs(input_dev, ABS_MT_DISTANCE, distance);
 		input_report_abs(input_dev, ABS_MT_ORIENTATION, orientation);
+#else 
+		input_report_key(input_dev, BTN_TOUCH, 1);
+		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
+		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
+		//input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, w);
+		//input_report_abs(input_dev, ABS_MT_WIDTH_MAJOR, w);
+		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, major);
+		input_report_abs(input_dev, ABS_MT_TRACKING_ID, id);
 		input_mt_sync(input_dev);
-#else
-			input_report_key(input_dev, BTN_TOOL_PEN, 1);
-			input_report_key(input_dev, BTN_TOUCH, 1);
-			input_report_abs(input_dev, ABS_MT_POSITION_X, x);
-			input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
-			input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
-			input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, major);
-			input_report_abs(input_dev, ABS_MT_TRACKING_ID, 0);
-			input_mt_sync(input_dev);
-		//	down_speed++;
-			
-		
-		
+	
 #endif
-		LOG_ERR("usr touch down");
 #if 0//defined(CONFIG_FORYOU_CSR)
 		pr_err("Hawayi [%s] Line:%d   x:%d y:%d   max_x:%d max_y:%d\r\n", 
 			__FUNCTION__, __LINE__, x, y, data->max_x, data->max_y);
@@ -1248,17 +1238,10 @@ static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 #if 0
 		/* close out slot */
 		input_mt_report_slot_state(input_dev, 0, 0);
-		input_report_key(input_dev, BTN_TOUCH, 0);
-		input_mt_sync(input_dev);
 #else
-		input_report_key(input_dev, BTN_TOOL_PEN, 0);
 		input_report_key(input_dev, BTN_TOUCH, 0);
-		//input_sync(input_dev);
-		LOG_ERR("__event_get_keyframe check Now report all the point  it!");
-		mxt_input_sync(data);
-		//down_speed = 0;
 #endif
-		LOG_ERR("usr touch up");
+
 	}
 
 	data->update_input = true;
@@ -1535,7 +1518,6 @@ update_count:
 	data->last_message_count = total_handled;
 
 	if (data->update_input) {
-		LOG_ERR("report all to aplication!---------------------------------------------");
 		mxt_input_sync(data);
 		data->update_input = false;
 	}
@@ -2634,7 +2616,6 @@ static int mxt_initialize_input_device(struct mxt_data *data)
 	}
 
 	/* For multi touch */
-	input_dev->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS) ;// add rxhu
 #if 0
 	error = input_mt_init_slots(input_dev, num_mt_slots, mt_flags);
 	if (error) {
@@ -2642,9 +2623,10 @@ static int mxt_initialize_input_device(struct mxt_data *data)
 		goto err_free_mem;
 	}
 #else
-	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);// add rxhu
+	input_dev->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
+	__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
 #endif
-
 	if (data->multitouch == MXT_TOUCH_MULTITOUCHSCREEN_T100) {
 		input_set_abs_params(input_dev, ABS_MT_TOOL_TYPE,
 				     0, MT_TOOL_MAX, 0, 0);
