@@ -53,7 +53,8 @@
 #define RV_DRV_NAME		"sirf,rearview"
 #define DEVICE_NAME		"rearview"
 
-#define GPIO_RVC_KEY_NUM  376
+//#define GPIO_RVC_KEY_NUM  376
+#define GPIO_RVC_KEY_NUM  416
 #define CVBS_ADDR 0x10db3010
 
 #define  DIS_WIDTH   800
