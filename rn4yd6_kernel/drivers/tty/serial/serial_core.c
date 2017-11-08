@@ -38,6 +38,7 @@
 #include <asm/irq.h>
 #include <asm/uaccess.h>
 
+#include <linux/debug_uart.h>
 /*
  * This is used to lock changes in serial line configuration.
  */
@@ -202,6 +203,147 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
 
 	return retval;
 }
+
+//add rxhu
+#define LOGD(format,...)    printk(KERN_INFO "rxhu:[func:%s][Line:%d] "format"\n",__FUNCTION__, __LINE__,##__VA_ARGS__)//add rxhu
+#define LOG_ERR(format,...)    printk(KERN_ERR "rxhu:[func:%s][Line:%d] "format"\n",__FUNCTION__, __LINE__,##__VA_ARGS__)
+
+void debug_uart_tx(struct uart_port *port,unsigned char *buf,int count);
+extern void debug_sirfsoc_uart_set_termios(struct uart_port *port,
+				       struct ktermios *termios,
+				       struct ktermios *old);
+
+static struct uart_driver *debug_normal_driver;
+static struct ktermios *debug_save_init_termios;
+
+void debug_uart_serial_tx(unsigned char *buf,int count)
+{
+	struct uart_state *state = debug_normal_driver->state + 3;
+	struct uart_port *uport = state->uart_port;
+	debug_uart_tx(uport,buf,count);
+}
+EXPORT_SYMBOL(debug_uart_serial_tx);
+
+int debug_uart_port_startup(void)
+{
+	struct uart_state *state = debug_normal_driver->state + 3;
+	//struct tty_port *port = &state->port;
+	struct uart_port *uport = state->uart_port;
+	unsigned long page;
+	int retval = 0;
+	
+	LOG_ERR("sssssssssssssssssss");
+	state->uart_port->state = state;
+	state->port.low_latency = (state->uart_port->flags & UPF_LOW_LATENCY) ? 1 : 0;
+	
+	/*
+	 * Make sure the device is in D0 state.
+	 */
+	uart_change_pm(state, UART_PM_STATE_ON);
+	
+	/*
+	 * Initialise and allocate the transmit and temporary
+	 * buffer.
+	 */
+	if (!state->xmit.buf) {
+		/* This is protected by the per port mutex */
+		page = get_zeroed_page(GFP_KERNEL);
+		if (!page)
+			return -ENOMEM;
+
+		state->xmit.buf = (unsigned char *) page;
+		uart_circ_clear(&state->xmit);
+	}
+	
+
+	retval = uport->ops->startup(uport);
+#if 0
+	//debug_save_init_termios->c_iflag = 1296;
+	//debug_save_init_termios->c_oflag = 5;
+	//debug_save_init_termios->c_cflag = 7346;
+	//debug_save_init_termios->c_lflag = 35387;
+	//debug_save_init_termios->c_line = 0;
+
+	//debug_save_init_termios->c_ispeed = 115200;
+	//debug_save_init_termios->c_ospeed = 115200;
+
+	//debug_save_init_termios->c_cc[VTIME] = 1;
+	//debug_save_init_termios->c_cc[VMIN] = 1;
+
+	//debug_save_init_termios->c_ispeed = 115200;
+	//debug_save_init_termios->c_ospeed = 115200;
+	memset(debug_save_init_termios,0,sizeof(struct ktermios));
+
+	debug_save_init_termios->c_ispeed = B115200;
+	debug_save_init_termios->c_ispeed = B115200;
+
+	debug_save_init_termios->c_cflag |= CLOCAL;
+	debug_save_init_termios->c_cflag |= CREAD;
+	debug_save_init_termios->c_cflag &= ~CRTSCTS;
+	debug_save_init_termios->c_cflag &= ~CSIZE;   
+	debug_save_init_termios->c_cflag |= CS8;
+
+	debug_save_init_termios->c_cflag &= ~PARENB;     
+    debug_save_init_termios->c_iflag &= ~INPCK; 
+
+	debug_save_init_termios->c_cflag &= ~CSTOPB;
+
+	debug_save_init_termios->c_oflag &= ~OPOST;    
+      
+  	debug_save_init_termios->c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+
+	debug_save_init_termios->c_cc[VTIME] = 1; /* 读取一个字符等待1*(1/10)s */      
+    debug_save_init_termios->c_cc[VMIN] = 1;
+
+
+	uport->ops->set_termios(uport,debug_save_init_termios,NULL);
+#else
+	memset(debug_save_init_termios,0,sizeof(struct ktermios));
+
+	debug_save_init_termios->c_ispeed = B115200;
+	debug_save_init_termios->c_ispeed = B115200;
+
+	debug_save_init_termios->c_cflag |= CLOCAL;
+	debug_save_init_termios->c_cflag |= CREAD;
+	debug_save_init_termios->c_cflag &= ~CRTSCTS;
+	debug_save_init_termios->c_cflag &= ~CSIZE;   
+	debug_save_init_termios->c_cflag |= CS8;
+
+	debug_save_init_termios->c_cflag &= ~PARENB;     
+    debug_save_init_termios->c_iflag &= ~INPCK; 
+	//debug_save_init_termios->c_iflag |= INPCK; 
+
+	debug_save_init_termios->c_cflag &= ~CSTOPB;
+
+	debug_save_init_termios->c_oflag &= ~OPOST;    
+      
+  	debug_save_init_termios->c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+
+	debug_save_init_termios->c_cc[VTIME] = 1; /* 读取一个字符等待1*(1/10)s */      
+    debug_save_init_termios->c_cc[VMIN] = 1;
+	uport->ops->set_mctrl(uport,6);
+	tty_termios_encode_baud_rate(debug_save_init_termios, 115200, 115200);
+	debug_sirfsoc_uart_set_termios(uport,debug_save_init_termios,NULL);
+	//uport->ops->set_mctrl(uport,6);
+#endif
+	
+	LOGD("OK set the uart successfully! retval = %d",retval);
+
+	return retval;
+	
+	
+}
+EXPORT_SYMBOL(debug_uart_port_startup);
+
+int debug_uart_port_close(void)
+{
+	struct uart_state *state = debug_normal_driver->state + 3;
+	struct uart_port *uport = state->uart_port;
+	uport->ops->shutdown(uport);
+	
+	return 0;
+}EXPORT_SYMBOL(debug_uart_port_close);
+//end add
 
 static int uart_startup(struct tty_struct *tty, struct uart_state *state,
 		int init_hw)
@@ -2319,6 +2461,9 @@ int uart_register_driver(struct uart_driver *drv)
 	 * Maybe we should be using a slab cache for this, especially if
 	 * we have a large number of ports to handle.
 	 */
+
+	debug_normal_driver = drv;//add rxhu
+
 	drv->state = kzalloc(sizeof(struct uart_state) * drv->nr, GFP_KERNEL);
 	if (!drv->state)
 		goto out;
@@ -2342,6 +2487,7 @@ int uart_register_driver(struct uart_driver *drv)
 	normal->driver_state    = drv;
 	tty_set_operations(normal, &uart_ops);
 
+	debug_save_init_termios = &normal->init_termios;//add rxhu
 	/*
 	 * Initialise the UART state(s).
 	 */

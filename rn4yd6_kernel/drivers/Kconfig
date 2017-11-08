@@ -6,6 +6,8 @@ source "drivers/bus/Kconfig"
 
 source "drivers/errcode_v1/Kconfig"
 
+source "drivers/uart_debug_drv/Kconfig"
+
 source "drivers/usb_power_patch/Kconfig"
 
 source "drivers/connector/Kconfig"

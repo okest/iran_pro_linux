@@ -34,7 +34,12 @@
 #include <asm/irq.h>
 #include <asm/mach/irq.h>
 
+#include <linux/debug_uart.h>
+#include <linux/workqueue.h>
+
 #include "sirfsoc_uart.h"
+#define LOGD(format,...)    printk(KERN_INFO "rxhu:[func:%s][Line:%d] "format"\n",__FUNCTION__, __LINE__,##__VA_ARGS__)//add rxhu
+#define LOG_ERR(format,...)    printk(KERN_ERR "rxhu:[func:%s][Line:%d] "format"\n",__FUNCTION__, __LINE__,##__VA_ARGS__)
 
 static unsigned int
 sirfsoc_uart_pio_tx_chars(struct sirfsoc_uart_port *sirfport, int count);
@@ -115,6 +120,11 @@ static void sirfsoc_uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
 	unsigned int val = assert ? SIRFUART_AFC_CTRL_RX_THD : 0x0;
 	unsigned int current_val;
 
+	//add rxhu
+	if(3 == port->line)
+		LOGD("come to mctrl = %d",mctrl);
+	//end add
+
 	if (mctrl & TIOCM_LOOP) {
 		if (sirfport->uart_reg->uart_type == SIRF_REAL_UART)
 			wr_regl(port, ureg->sirfsoc_line_ctrl,
@@ -146,6 +156,7 @@ static void sirfsoc_uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
 		else
 			gpio_set_value(sirfport->rts_gpio, 0);
 	}
+	
 }
 
 static void sirfsoc_uart_stop_tx(struct uart_port *port)
@@ -291,6 +302,61 @@ static void sirfsoc_uart_start_tx(struct uart_port *port)
 					uint_en->sirfsoc_txfifo_empty_en);
 	}
 }
+//add rxhu 
+#if 0
+static unsigned long			debug_rx_period_time;
+static struct hrtimer			debug_hrt;
+
+void debug_uart_rx_callback(void)
+{
+
+}
+#endif
+static int read_count = 0;
+void debug_uart_tx(struct uart_port *port,unsigned char *buf,int count)
+{
+	struct sirfsoc_uart_port *sirfport = to_sirfport(port);
+	struct sirfsoc_register *ureg = &sirfport->uart_reg->uart_reg;
+	struct sirfsoc_fifo_status *ufifo_st = &sirfport->uart_reg->fifo_status;
+	int i = 0;
+	
+	wr_regl(port, ureg->sirfsoc_tx_fifo_op, SIRFUART_FIFO_STOP);
+
+	while (!(rd_regl(port, ureg->sirfsoc_tx_fifo_status) & ufifo_st->ff_full(port)) && count--) {
+		wr_regl(port, ureg->sirfsoc_tx_fifo_data,
+				buf[i]);
+		i++;
+		//LOGD("begin to send the char i = %d",i);//rxhu delete
+	}
+
+	wr_regl(port, ureg->sirfsoc_tx_fifo_op, SIRFUART_FIFO_START);
+	
+}EXPORT_SYMBOL(debug_uart_tx);
+#if 1
+void debug_uart_rx(struct uart_port *port, unsigned int max_rx_count)
+{
+	struct sirfsoc_uart_port *sirfport = to_sirfport(port);
+	struct sirfsoc_register *ureg = &sirfport->uart_reg->uart_reg;
+	struct sirfsoc_fifo_status *ufifo_st = &sirfport->uart_reg->fifo_status;
+	unsigned int ch, rx_count = 0;
+
+	while (!(rd_regl(port, ureg->sirfsoc_rx_fifo_status) & ufifo_st->ff_empty(port))) {
+		ch = rd_regl(port, ureg->sirfsoc_rx_fifo_data) |
+			SIRFUART_DUMMY_READ;
+		LOGD("ch = %c",ch);
+		if(ch != '~' && ch != ' ')
+		{
+			uart_recv_buf[read_count] = ch;//save char
+			rx_count++;
+			read_count++;
+		}
+		if (rx_count >= max_rx_count)
+			break;
+	}
+}
+#endif
+//end add
+
 
 static void sirfsoc_uart_stop_rx(struct uart_port *port)
 {
@@ -410,7 +476,8 @@ sirfsoc_uart_pio_rx_chars(struct uart_port *port, unsigned int max_rx_count)
 	struct sirfsoc_fifo_status *ufifo_st = &sirfport->uart_reg->fifo_status;
 	unsigned int ch, rx_count = 0;
 	struct tty_struct *tty;
-
+	if(3 == port->line)
+		LOGD("port->line = %d",port->line);
 	tty = tty_port_tty_get(&port->state->port);
 	if (!tty)
 		return -ENODEV;
@@ -424,6 +491,8 @@ sirfsoc_uart_pio_rx_chars(struct uart_port *port, unsigned int max_rx_count)
 		rx_count++;
 		if (rx_count >= max_rx_count)
 			break;
+		if(3 == port->line)
+			LOGD("ch = %c",ch);
 	}
 
 	port->icount.rx += rx_count;
@@ -497,6 +566,9 @@ static irqreturn_t sirfsoc_uart_isr(int irq, void *dev_id)
 	struct sirfsoc_int_en *uint_en = &sirfport->uart_reg->uart_int_en;
 	struct uart_state *state = port->state;
 	struct circ_buf *xmit = &port->state->xmit;
+
+	if(3 == port->line)
+		LOGD("port->line = %d !!!!!",port->line);
 
 	spin_lock(&port->lock);
 	intr_status = rd_regl(port, ureg->sirfsoc_int_st_reg);
@@ -736,6 +808,21 @@ static void sirfsoc_uart_set_termios(struct uart_port *port,
 
 	ioclk_rate	= port->uartclk;
 
+	//add rxhu
+#if 0	
+	if(3 == port->line)
+	{
+		LOGD("termios->c_iflag = %d",termios->c_iflag);
+		LOGD("termios->c_oflag = %d",termios->c_oflag);
+		LOGD("termios->c_cflag = %d",termios->c_cflag);
+		LOGD("termios->c_lflag = %d",termios->c_lflag);
+		LOGD("termios->c_line = %d",termios->c_line);
+		LOGD("termios->c_ispeed = %d",termios->c_ispeed);
+		LOGD("termios->c_ospeed = %d",termios->c_ospeed);
+	}
+#endif
+	//end add
+
 	switch (termios->c_cflag & CSIZE) {
 	default:
 	case CS8:
@@ -907,7 +994,445 @@ static void sirfsoc_uart_set_termios(struct uart_port *port,
 	uart_update_timeout(port, termios->c_cflag, set_baud);
 	wr_regl(port, ureg->sirfsoc_tx_rx_en, SIRFUART_TX_EN | SIRFUART_RX_EN);
 	spin_unlock_irqrestore(&port->lock, flags);
+//add rxhu
+	if(3 ==port->line)
+	{
+		LOGD("termios->c_cflag & CSIZE = %d",(termios->c_cflag & CSIZE));
+		LOGD("termios->c_iflag & INPCK = %d",(termios->c_iflag & INPCK));
+		LOGD("termios->c_iflag & (IGNBRK | BRKINT | PARMRK) = %d",(termios->c_iflag & (IGNBRK | BRKINT | PARMRK)));
+		LOGD("termios->c_iflag & IGNPAR = %d",(termios->c_iflag & IGNPAR));
+		LOGD("termios->c_cflag & PARENB = %d",(termios->c_cflag & PARENB));
+		LOGD("termios->c_cflag & CMSPAR = %d",(termios->c_cflag & CMSPAR));
+		LOGD("termios->c_cflag & PARODD = %d",(termios->c_cflag & PARODD));
+		LOGD("termios->c_iflag & IGNBRK = %d",(termios->c_iflag & IGNBRK));
+		LOGD("termios->c_iflag & IGNPAR = %d",(termios->c_iflag & IGNPAR));
+		LOGD("termios->c_cflag & CREAD = %d",(termios->c_cflag & CREAD));
+		LOGD("tty_termios_baud_rate(termios) ret = %d",tty_termios_baud_rate(termios));
+		LOGD("UART_ENABLE_MS(port, termios->c_cflag) = %d",UART_ENABLE_MS(port, termios->c_cflag));
+		LOGD("sirfport->ms_enabled = %d",sirfport->ms_enabled);
+		LOGD("(sirfport->tx_dma_chan == NULL) = %d (sirfport->rx_dma_chan == NULL) = %d",\
+			(sirfport->tx_dma_chan == NULL),(sirfport->tx_dma_chan == NULL));
+		LOGD("!of_machine_is_compatible(sirf,atlas7-pxp) = %d",!of_machine_is_compatible("sirf,atlas7-pxp"));
+		LOGD("clk_div_reg = %d set_baud = %ld baud_rate =%ld threshold_div = %d ioclk_rate = %ld",\
+			clk_div_reg,set_baud,baud_rate,threshold_div,ioclk_rate);
+		LOGD("(set_baud < 1000000) = %d",(set_baud < 1000000));
+	}
+//end add
+
 }
+
+//add rxhu
+#if 1
+static int pio_mode_f = 0;//add rxhu 
+static int work_run_f = 0;//for work
+
+struct sk_buff_head uart_recv_queue;
+unsigned char uart_recv_buf[UART_RX_BUF_SIZE];
+
+
+struct workqueue_struct *uart_keventd_wq;
+struct work_struct uart_work;
+
+static void uart_rx_timeout_delay(unsigned int msecs)
+{
+	unsigned long timeout = msecs_to_jiffies(msecs) + 1;
+
+	while (timeout)
+		timeout = schedule_timeout_uninterruptible(timeout);
+}
+
+static void uart_recv_work_handle(struct work_struct *work)
+{
+	struct sk_buff *skb; 
+    unsigned char *skbdata;
+	unsigned int sk_len = 0;
+
+	uart_rx_timeout_delay(13);//timeout for RX
+	uart_recv_buf[read_count] = '\0';
+	read_count++;
+	sk_len = read_count + 1;
+	
+	if(sk_len <= 4)
+	{
+		memset(uart_recv_buf, '\0', UART_RX_BUF_SIZE);
+		work_run_f = 0;
+		read_count = 0;
+		return ;
+	}
+	
+	if(uart_recv_buf[0] != 'A' || uart_recv_buf[1] != '6' || uart_recv_buf[2] != '6' || uart_recv_buf[3] != 'A')
+	{
+		memset(uart_recv_buf, '\0', UART_RX_BUF_SIZE);
+		work_run_f = 0;
+		read_count = 0;
+		return ;
+	}
+
+	skb = alloc_skb(sk_len, GFP_KERNEL); 
+    if (!skb) 
+    { 
+		LOG_ERR("alloc_skb error !!");
+        return ;
+    } 
+
+	skbdata = skb_put(skb,sk_len);//获取skb数据部分的指针
+
+	strncpy(skbdata, uart_recv_buf, sk_len);
+
+	skb_queue_tail(&(uart_recv_queue), skb);  
+
+	LOG_ERR("come to schedule end!");
+
+	/*clear the falg*/
+	wake_up_interruptible(&read_wait_queue);
+	memset(uart_recv_buf, '\0', UART_RX_BUF_SIZE);
+	work_run_f = 0;
+	read_count = 0;
+
+}
+
+void debug_uart_recv_work_init(void)
+{
+	uart_keventd_wq = create_singlethread_workqueue("kuart_wq");
+	INIT_WORK(&(uart_work), uart_recv_work_handle);
+
+	skb_queue_head_init(&(uart_recv_queue));
+
+}EXPORT_SYMBOL(debug_uart_recv_work_init);
+
+void debug_uart_recv_work_deinit(void)
+{
+	struct sk_buff *p_skb;
+	flush_workqueue(uart_keventd_wq);
+	cancel_work_sync(&(uart_work));
+	destroy_workqueue(uart_keventd_wq);
+	while (1)
+    {
+    	if (skb_queue_empty(&(uart_recv_queue))) 
+    	{
+    		break;
+    	}
+        p_skb = skb_dequeue(&(uart_recv_queue));
+        if (!p_skb) 
+        { 
+			LOGD("skb_dequeue is error !");
+            break;
+    	} 
+    	kfree_skb(p_skb);
+    }
+	LOGD("the uart3 close success");
+
+}EXPORT_SYMBOL(debug_uart_recv_work_deinit);
+
+void debug_uart_switch_to_pio(void)
+{
+	pio_mode_f = 1;
+}EXPORT_SYMBOL(debug_uart_switch_to_pio);
+
+void debug_uart_switch_recovery(void)
+{
+	pio_mode_f = 0;
+}EXPORT_SYMBOL(debug_uart_switch_recovery);
+
+void debug_sirfsoc_uart_set_termios(struct uart_port *port,
+				       struct ktermios *termios,
+				       struct ktermios *old)
+{
+	struct sirfsoc_uart_port *sirfport = to_sirfport(port);
+	struct sirfsoc_register *ureg = &sirfport->uart_reg->uart_reg;
+	struct sirfsoc_int_en *uint_en = &sirfport->uart_reg->uart_int_en;
+	unsigned long	config_reg = 0;
+	unsigned long	baud_rate;
+	unsigned long	set_baud;
+	unsigned long	flags;
+	unsigned long	ic;
+	unsigned int	clk_div_reg = 0;
+	unsigned long	txfifo_op_reg, ioclk_rate;
+	unsigned long	rx_time_out;
+	int		threshold_div;
+	u32		data_bit_len, stop_bit_len, len_val;
+	unsigned long	sample_div_reg = 0xf;
+
+	ioclk_rate	= port->uartclk;
+
+	//add rxhu
+#if 0	
+	if(3 == port->line)
+	{
+		LOGD("termios->c_iflag = %d",termios->c_iflag);
+		LOGD("termios->c_oflag = %d",termios->c_oflag);
+		LOGD("termios->c_cflag = %d",termios->c_cflag);
+		LOGD("termios->c_lflag = %d",termios->c_lflag);
+		LOGD("termios->c_line = %d",termios->c_line);
+		LOGD("termios->c_ispeed = %d",termios->c_ispeed);
+		LOGD("termios->c_ospeed = %d",termios->c_ospeed);
+	}
+#endif
+	//end add
+
+	switch (termios->c_cflag & CSIZE) {
+	default:
+	case CS8:
+		data_bit_len = 8;
+		config_reg |= SIRFUART_DATA_BIT_LEN_8;
+		break;
+	case CS7:
+		data_bit_len = 7;
+		config_reg |= SIRFUART_DATA_BIT_LEN_7;
+		break;
+	case CS6:
+		data_bit_len = 6;
+		config_reg |= SIRFUART_DATA_BIT_LEN_6;
+		break;
+	case CS5:
+		data_bit_len = 5;
+		config_reg |= SIRFUART_DATA_BIT_LEN_5;
+		break;
+	}
+	if (termios->c_cflag & CSTOPB) {
+		config_reg |= SIRFUART_STOP_BIT_LEN_2;
+		stop_bit_len = 2;
+	} else
+		stop_bit_len = 1;
+
+	spin_lock_irqsave(&port->lock, flags);
+	port->read_status_mask = uint_en->sirfsoc_rx_oflow_en;
+	port->ignore_status_mask = 0;
+	if (sirfport->uart_reg->uart_type == SIRF_REAL_UART) {
+		if (termios->c_iflag & INPCK)
+			port->read_status_mask |= uint_en->sirfsoc_frm_err_en |
+				uint_en->sirfsoc_parity_err_en;
+	} else {
+		if (termios->c_iflag & INPCK)
+			port->read_status_mask |= uint_en->sirfsoc_frm_err_en;
+	}
+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
+			port->read_status_mask |= uint_en->sirfsoc_rxd_brk_en;
+	if (sirfport->uart_reg->uart_type == SIRF_REAL_UART) {
+		if (termios->c_iflag & IGNPAR)
+			port->ignore_status_mask |=
+				uint_en->sirfsoc_frm_err_en |
+				uint_en->sirfsoc_parity_err_en;
+		if (termios->c_cflag & PARENB) {
+			if (termios->c_cflag & CMSPAR) {
+				if (termios->c_cflag & PARODD)
+					config_reg |= SIRFUART_STICK_BIT_MARK;
+				else
+					config_reg |= SIRFUART_STICK_BIT_SPACE;
+			} else {
+				if (termios->c_cflag & PARODD)
+					config_reg |= SIRFUART_STICK_BIT_ODD;
+				else
+					config_reg |= SIRFUART_STICK_BIT_EVEN;
+			}
+		}
+	} else {
+		if (termios->c_iflag & IGNPAR)
+			port->ignore_status_mask |=
+				uint_en->sirfsoc_frm_err_en;
+		if (termios->c_cflag & PARENB)
+			dev_warn(port->dev,
+					"USP-UART not support parity err\n");
+	}
+	if (termios->c_iflag & IGNBRK) {
+		port->ignore_status_mask |=
+			uint_en->sirfsoc_rxd_brk_en;
+		if (termios->c_iflag & IGNPAR)
+			port->ignore_status_mask |=
+				uint_en->sirfsoc_rx_oflow_en;
+	}
+	if ((termios->c_cflag & CREAD) == 0)
+		port->ignore_status_mask |= SIRFUART_DUMMY_READ;
+	/* Hardware Flow Control Settings */
+	if (UART_ENABLE_MS(port, termios->c_cflag)) {
+		if (!sirfport->ms_enabled)
+			sirfsoc_uart_enable_ms(port);
+	} else {
+		if (sirfport->ms_enabled)
+			sirfsoc_uart_disable_ms(port);
+	}
+	baud_rate = uart_get_baud_rate(port, termios, old, 0, 4000000);
+	if (ioclk_rate == 150000000) {
+		for (ic = 0; ic < SIRF_BAUD_RATE_SUPPORT_NR; ic++)
+			if (baud_rate == baudrate_to_regv[ic].baud_rate)
+				clk_div_reg = baudrate_to_regv[ic].reg_val;
+	}
+	//if(3 == port->line)
+	//	baud_rate = 115200;
+	set_baud = baud_rate;
+	if (sirfport->uart_reg->uart_type == SIRF_REAL_UART) {
+		if (unlikely(clk_div_reg == 0))
+			clk_div_reg = sirfsoc_uart_calc_sample_div(baud_rate,
+					ioclk_rate, &set_baud);
+		/* ignore uart setting on pxp for virt uart is different */
+		if (!of_machine_is_compatible("sirf,atlas7-pxp"))
+			wr_regl(port, ureg->sirfsoc_divisor, clk_div_reg);
+	} else {
+		clk_div_reg = sirfsoc_usp_calc_sample_div(baud_rate,
+				ioclk_rate, &sample_div_reg);
+		sample_div_reg--;
+		set_baud = ((ioclk_rate / (clk_div_reg+1) - 1) /
+				(sample_div_reg + 1));
+		/* setting usp mode 2 */
+		len_val = ((1 << SIRFSOC_USP_MODE2_RXD_DELAY_OFFSET) |
+				(1 << SIRFSOC_USP_MODE2_TXD_DELAY_OFFSET));
+		len_val |= ((clk_div_reg & SIRFSOC_USP_MODE2_CLK_DIVISOR_MASK)
+				<< SIRFSOC_USP_MODE2_CLK_DIVISOR_OFFSET);
+		wr_regl(port, ureg->sirfsoc_mode2, len_val);
+	}
+	if (tty_termios_baud_rate(termios))
+	//if (set_baud)
+		tty_termios_encode_baud_rate(termios, set_baud, set_baud);
+		//tty_termios_encode_baud_rate(termios, baud_rate, baud_rate);
+	/* set receive timeout && data bits len */
+	rx_time_out = SIRFSOC_UART_RX_TIMEOUT(set_baud, 20000);
+	rx_time_out = SIRFUART_RECV_TIMEOUT_VALUE(rx_time_out);
+	txfifo_op_reg = rd_regl(port, ureg->sirfsoc_tx_fifo_op);
+	wr_regl(port, ureg->sirfsoc_tx_fifo_op,
+			(txfifo_op_reg & ~SIRFUART_FIFO_START));
+	if (sirfport->uart_reg->uart_type == SIRF_REAL_UART) {
+		config_reg |= SIRFUART_UART_RECV_TIMEOUT(rx_time_out);
+		wr_regl(port, ureg->sirfsoc_line_ctrl, config_reg);
+	} else {
+		/*tx frame ctrl*/
+		len_val = (data_bit_len - 1) << SIRFSOC_USP_TX_DATA_LEN_OFFSET;
+		len_val |= (data_bit_len + 1 + stop_bit_len - 1) <<
+				SIRFSOC_USP_TX_FRAME_LEN_OFFSET;
+		len_val |= ((data_bit_len - 1) <<
+				SIRFSOC_USP_TX_SHIFTER_LEN_OFFSET);
+		len_val |= (((clk_div_reg & 0xc00) >> 10) <<
+				SIRFSOC_USP_TX_CLK_DIVISOR_OFFSET);
+		wr_regl(port, ureg->sirfsoc_tx_frame_ctrl, len_val);
+		/*rx frame ctrl*/
+		len_val = (data_bit_len - 1) << SIRFSOC_USP_RX_DATA_LEN_OFFSET;
+		len_val |= (data_bit_len + 1 + stop_bit_len - 1) <<
+				SIRFSOC_USP_RX_FRAME_LEN_OFFSET;
+		len_val |= (data_bit_len - 1) <<
+				SIRFSOC_USP_RX_SHIFTER_LEN_OFFSET;
+		len_val |= (((clk_div_reg & 0xf000) >> 12) <<
+				SIRFSOC_USP_RX_CLK_DIVISOR_OFFSET);
+		wr_regl(port, ureg->sirfsoc_rx_frame_ctrl, len_val);
+		/*async param*/
+		wr_regl(port, ureg->sirfsoc_async_param_reg,
+			(SIRFUART_USP_RECV_TIMEOUT(rx_time_out)) |
+			(sample_div_reg & SIRFSOC_USP_ASYNC_DIV2_MASK) <<
+			SIRFSOC_USP_ASYNC_DIV2_OFFSET);
+	}
+	if (!sirfport->tx_dma_chan)//rxhu modify ok to drv tx
+		wr_regl(port, ureg->sirfsoc_tx_dma_io_ctrl, SIRFUART_DMA_MODE);
+	else
+		wr_regl(port, ureg->sirfsoc_tx_dma_io_ctrl, SIRFUART_IO_MODE);
+	if (!sirfport->rx_dma_chan)//rxhu modify
+		wr_regl(port, ureg->sirfsoc_rx_dma_io_ctrl,
+			rd_regl(port, ureg->sirfsoc_rx_dma_io_ctrl) &
+			~SIRFUART_IO_MODE);
+	else
+		wr_regl(port, ureg->sirfsoc_rx_dma_io_ctrl,
+			rd_regl(port, ureg->sirfsoc_rx_dma_io_ctrl) |
+			SIRFUART_IO_MODE);
+	sirfport->rx_period_time = 20000000;
+	/* Reset Rx/Tx FIFO Threshold level for proper baudrate */
+	if (set_baud < 1000000)
+		threshold_div = 1;
+	else
+		threshold_div = 2;
+	wr_regl(port, ureg->sirfsoc_tx_fifo_ctrl,
+				SIRFUART_FIFO_THD(port) / threshold_div);
+	wr_regl(port, ureg->sirfsoc_rx_fifo_ctrl,
+				SIRFUART_FIFO_THD(port) / threshold_div);
+	txfifo_op_reg |= SIRFUART_FIFO_START;
+	wr_regl(port, ureg->sirfsoc_tx_fifo_op, txfifo_op_reg);
+	uart_update_timeout(port, termios->c_cflag, set_baud);
+	wr_regl(port, ureg->sirfsoc_tx_rx_en, SIRFUART_TX_EN | SIRFUART_RX_EN);
+	spin_unlock_irqrestore(&port->lock, flags);
+//add rxhu
+	if(3 ==port->line)
+	{
+		LOGD("termios->c_cflag & CSIZE = %d",(termios->c_cflag & CSIZE));
+		LOGD("termios->c_iflag & INPCK = %d",(termios->c_iflag & INPCK));
+		LOGD("termios->c_iflag & (IGNBRK | BRKINT | PARMRK) = %d",(termios->c_iflag & (IGNBRK | BRKINT | PARMRK)));
+		LOGD("termios->c_iflag & IGNPAR = %d",(termios->c_iflag & IGNPAR));
+		LOGD("termios->c_cflag & PARENB = %d",(termios->c_cflag & PARENB));
+		LOGD("termios->c_cflag & CMSPAR = %d",(termios->c_cflag & CMSPAR));
+		LOGD("termios->c_cflag & PARODD = %d",(termios->c_cflag & PARODD));
+		LOGD("termios->c_iflag & IGNBRK = %d",(termios->c_iflag & IGNBRK));
+		LOGD("termios->c_iflag & IGNPAR = %d",(termios->c_iflag & IGNPAR));
+		LOGD("termios->c_cflag & CREAD = %d",(termios->c_cflag & CREAD));
+		LOGD("tty_termios_baud_rate(termios) ret = %d",tty_termios_baud_rate(termios));
+		LOGD("UART_ENABLE_MS(port, termios->c_cflag) = %d",UART_ENABLE_MS(port, termios->c_cflag));
+		LOGD("sirfport->ms_enabled = %d",sirfport->ms_enabled);
+		LOGD("(sirfport->tx_dma_chan == NULL) = %d (sirfport->rx_dma_chan == NULL) = %d",\
+			(sirfport->tx_dma_chan == NULL),(sirfport->tx_dma_chan == NULL));
+		LOGD("!of_machine_is_compatible(sirf,atlas7-pxp) = %d",!of_machine_is_compatible("sirf,atlas7-pxp"));
+		LOGD("clk_div_reg = %d set_baud = %ld baud_rate =%ld threshold_div = %d ioclk_rate = %ld",\
+			clk_div_reg,set_baud,baud_rate,threshold_div,ioclk_rate);
+		LOGD("(set_baud < 1000000) = %d",(set_baud < 1000000));
+
+		LOGD("termios->c_ispeed = %d termios->c_ospeed =%d",termios->c_ispeed,termios->c_ospeed);
+	}
+//end add
+
+}
+EXPORT_SYMBOL(debug_sirfsoc_uart_set_termios);
+
+static irqreturn_t debug_uart_isr(int irq, void *dev_id)//drv irq handle
+{
+	unsigned long intr_status;
+	
+	unsigned long flag = TTY_NORMAL;
+	struct sirfsoc_uart_port *sirfport = (struct sirfsoc_uart_port *)dev_id;
+	struct uart_port *port = &sirfport->port;
+	struct sirfsoc_register *ureg = &sirfport->uart_reg->uart_reg;
+	
+	struct sirfsoc_int_status *uint_st = &sirfport->uart_reg->uart_int_st;
+
+	spin_lock(&port->lock);
+	intr_status = rd_regl(port, ureg->sirfsoc_int_st_reg);
+	wr_regl(port, ureg->sirfsoc_int_st_reg, intr_status);
+	intr_status &= rd_regl(port, ureg->sirfsoc_int_en_reg);
+
+	if (unlikely(intr_status & (SIRFUART_ERR_INT_STAT(uint_st,
+				sirfport->uart_reg->uart_type)))) {
+		if (intr_status & uint_st->sirfsoc_rxd_brk) {
+			port->icount.brk++;
+			if (uart_handle_break(port))
+				goto recv_char;
+		}
+		if (intr_status & uint_st->sirfsoc_rx_oflow) {
+			port->icount.overrun++;
+			flag = TTY_OVERRUN;
+		}
+		if (intr_status & uint_st->sirfsoc_frm_err) {
+			port->icount.frame++;
+			flag = TTY_FRAME;
+		}
+		if (intr_status & uint_st->sirfsoc_parity_err) {
+			port->icount.parity++;
+			flag = TTY_PARITY;
+		}
+		wr_regl(port, ureg->sirfsoc_rx_fifo_op, SIRFUART_FIFO_RESET);
+		wr_regl(port, ureg->sirfsoc_rx_fifo_op, 0);
+		wr_regl(port, ureg->sirfsoc_rx_fifo_op, SIRFUART_FIFO_START);
+		intr_status &= port->read_status_mask;
+	}
+recv_char:	
+	LOGD("the pio read irq");
+
+	debug_uart_rx(port,128);
+	
+	if(work_run_f == 0)
+	{
+			queue_work(uart_keventd_wq, &(uart_work));//schedule
+			work_run_f++;	
+	}		
+		
+	spin_unlock(&port->lock);
+	return IRQ_HANDLED;
+
+}
+
+#endif
+//end add
 
 static void sirfsoc_uart_pm(struct uart_port *port, unsigned int state,
 			      unsigned int oldstate)
@@ -929,16 +1454,34 @@ static int sirfsoc_uart_startup(struct uart_port *port)
 	int ret;
 
 	set_irq_flags(port->irq, IRQF_VALID | IRQF_NOAUTOEN);
-	ret = request_irq(port->irq,
+	
+	if(1 != pio_mode_f)//add rxhu
+	{
+		ret = request_irq(port->irq,
 				sirfsoc_uart_isr,
 				0,
 				SIRFUART_PORT_NAME,
 				sirfport);
-	if (ret != 0) {
-		dev_err(port->dev, "UART%d request IRQ line (%d) failed.\n",
-							index, port->irq);
-		goto irq_err;
+		if (ret != 0) {
+			dev_err(port->dev, "UART%d request IRQ line (%d) failed.\n",
+								index, port->irq);
+			goto irq_err;
+		}
 	}
+	else
+	{//add rxhu
+		ret = request_irq(port->irq,
+				debug_uart_isr,
+				0,
+				SIRFUART_PORT_NAME,
+				sirfport);
+		if (ret != 0) {
+			dev_err(port->dev, "UART%d request IRQ line (%d) failed.\n",
+								index, port->irq);
+			goto irq_err;
+		}
+	}//end add 
+	
 	/* initial hardware settings */
 	wr_regl(port, ureg->sirfsoc_tx_dma_io_ctrl,
 		rd_regl(port, ureg->sirfsoc_tx_dma_io_ctrl) |
@@ -961,7 +1504,7 @@ static int sirfsoc_uart_startup(struct uart_port *port)
 	wr_regl(port, ureg->sirfsoc_rx_fifo_op, 0);
 	wr_regl(port, ureg->sirfsoc_tx_fifo_ctrl, SIRFUART_FIFO_THD(port));
 	wr_regl(port, ureg->sirfsoc_rx_fifo_ctrl, SIRFUART_FIFO_THD(port));
-	if (sirfport->rx_dma_chan)
+	if ((sirfport->rx_dma_chan) && (1 != pio_mode_f))//modify rxhu
 		wr_regl(port, ureg->sirfsoc_rx_fifo_level_chk,
 			SIRFUART_RX_FIFO_CHK_SC(port->line, 0x1) |
 			SIRFUART_RX_FIFO_CHK_LC(port->line, 0x2) |
@@ -986,8 +1529,8 @@ static int sirfsoc_uart_startup(struct uart_port *port)
 			goto init_rx_err;
 		}
 	}
-	if (sirfport->uart_reg->uart_type == SIRF_REAL_UART &&
-		sirfport->rx_dma_chan)
+	if ((sirfport->uart_reg->uart_type == SIRF_REAL_UART) &&
+		(sirfport->rx_dma_chan) && (1 != pio_mode_f))
 		wr_regl(port, ureg->sirfsoc_swh_dma_io,
 			SIRFUART_CLEAR_RX_ADDR_EN);
 	if (sirfport->uart_reg->uart_type == SIRF_USP_UART &&
@@ -995,19 +1538,20 @@ static int sirfsoc_uart_startup(struct uart_port *port)
 		wr_regl(port, ureg->sirfsoc_rx_dma_io_ctrl,
 			rd_regl(port, ureg->sirfsoc_rx_dma_io_ctrl) |
 			SIRFSOC_USP_FRADDR_CLR_EN);
-	if (sirfport->rx_dma_chan && !sirfport->is_hrt_enabled) {
+	if ((sirfport->rx_dma_chan) && (!sirfport->is_hrt_enabled) && (1 != pio_mode_f)) {
 		sirfport->is_hrt_enabled = true;
 		sirfport->rx_period_time = 20000000;
 		sirfport->rx_last_pos = -1;
 		sirfport->pio_fetch_cnt = 0;
 		sirfport->rx_dma_items.xmit.tail =
 			sirfport->rx_dma_items.xmit.head = 0;
-		hrtimer_start(&sirfport->hrt,
-			ns_to_ktime(sirfport->rx_period_time),
-			HRTIMER_MODE_REL);
+
+			hrtimer_start(&sirfport->hrt,
+				ns_to_ktime(sirfport->rx_period_time),
+				HRTIMER_MODE_REL);						
 	}
 	wr_regl(port, ureg->sirfsoc_rx_fifo_op, SIRFUART_FIFO_START);
-	if (sirfport->rx_dma_chan)
+	if ((sirfport->rx_dma_chan) && (1 != pio_mode_f))
 		sirfsoc_uart_start_next_rx_dma(port);
 	else {
 		if (!sirfport->is_atlas7)
@@ -1197,6 +1741,11 @@ static struct uart_driver sirfsoc_uart_drv = {
 #endif
 };
 
+//add rxhu 
+static unsigned int read_flag = 1;
+
+//end add
+
 static enum hrtimer_restart
 	sirfsoc_uart_rx_dma_hrtimer_callback(struct hrtimer *hrt)
 {
@@ -1232,6 +1781,16 @@ static enum hrtimer_restart
 	while (count > 0) {
 		inserted = tty_insert_flip_string(tty->port,
 			(const unsigned char *)&xmit->buf[xmit->tail], count);
+		if(port->line == 3 && read_flag == 2)
+		{
+		//	LOGD("xmit->buf = %s count = %d",xmit->buf,count);
+			read_flag = 1;
+		}
+		else
+		{
+			read_flag++;
+		}
+			
 		if (!inserted)
 			goto next_hrt;
 		port->icount.rx += inserted;

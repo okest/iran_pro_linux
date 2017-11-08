@@ -1,0 +1,10 @@
+menuconfig UART_DEBUG
+        tristate "uart debug communicate in kernel"
+        help
+         this is uart debug 
+
+config  UART_DEBUG_INTERFACE
+        tristate "uart debug interface for rn4yd6"
+        depends on UART_DEBUG
+        help
+         this is UART_DEBUG_INTERFACE

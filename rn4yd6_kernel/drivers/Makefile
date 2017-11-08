@@ -13,6 +13,9 @@ obj-$(CONFIG_GENERIC_PHY)	+= phy/
 #add errcode_repo
 obj-$(CONFIG_ERRCODE)           +=errcode_v1/
 
+#add uart debug drv
+obj-$(CONFIG_UART_DEBUG)           +=uart_debug_drv/
+
 #add usb_power_patch
 obj-$(CONFIG_USB_PATCH)           +=usb_power_patch/
 
