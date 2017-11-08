@@ -2036,11 +2036,11 @@ static int rv_probe(struct platform_device *pdev)
 		goto exit;
 	}
 
-	//ret= kernel_thread_init();
-	//if (ret) {
-	//	dev_err(dev, "kernel_thread_init error\n");
-	//	goto exit;
-	//}
+	ret= kernel_thread_init();
+	if (ret) {
+		dev_err(dev, "kernel_thread_init error\n");
+		goto exit;
+	}
 	
 	platform_set_drvdata(pdev, rv);
 
@@ -2060,12 +2060,12 @@ static int rv_probe(struct platform_device *pdev)
 	rv->di_mode = VDSS_VPP_DI_VMRI;
 #endif
 	
-	//add by pt
-	//ret = misc_register(&cvbs_miscdev);
-	//if (ret) {
-	//	dev_err(dev, "failed to misc_register\n");
-	//	goto misc_exit;
-	//}
+	
+	ret = misc_register(&cvbs_miscdev);
+	if (ret) {
+		dev_err(dev, "failed to misc_register\n");
+		goto misc_exit;
+	}
 
 	ret = sysfs_create_files(&dev->kobj, rv_sysfs_attrs);
 	if (ret) {
