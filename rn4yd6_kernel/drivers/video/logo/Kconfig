@@ -31,6 +31,10 @@ config LOGO_RN4Y56_CLUT224
         bool "Standard 224-color RN4Y56 ADAYO logo"
         default y
 
+config LOGO_RN4YD6_CLUT224
+        bool "Standard 224-color RN4YD6 ADAYO logo"
+        default y
+
 config LOGO_RM4YC5_CLUT224
         bool "Standard 224-color RM4YC5 ADAYO logo"
         default y

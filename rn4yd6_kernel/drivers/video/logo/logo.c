@@ -19,8 +19,10 @@
 #endif
 
 extern const struct linux_logo logo_rn4y56_clut224;
+extern const struct linux_logo logo_rn4yd6_clut224;
 extern const struct linux_logo logo_rm4yc5_clut224;
-#define CONFIG_LOGO_RN4Y56_CLUT224
+//#define CONFIG_LOGO_RN4Y56_CLUT224
+#define CONFIG_LOGO_RN4YD6_CLUT224
 
 static bool nologo;
 module_param(nologo, bool, 0);
@@ -87,6 +89,11 @@ const struct linux_logo * __init_refok fb_find_logo(int depth)
 #ifdef CONFIG_LOGO_RN4Y56_CLUT224
                 /* Generic Linux logo */
                 logo = &logo_rn4y56_clut224;
+#endif
+
+#ifdef CONFIG_LOGO_RN4YD6_CLUT224
+                /* Generic Linux logo */
+                logo = &logo_rn4yd6_clut224;
 #endif
 
 #ifdef CONFIG_LOGO_RM4YC5_CLUT224

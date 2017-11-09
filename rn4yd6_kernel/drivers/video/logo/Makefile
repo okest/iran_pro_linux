@@ -6,6 +6,7 @@ obj-$(CONFIG_LOGO_LINUX_VGA16)		+= logo_linux_vga16.o
 obj-$(CONFIG_LOGO_LINUX_CLUT224)	+= logo_linux_clut224.o
 obj-$(CONFIG_LOGO_BLACKFIN_CLUT224)	+= logo_blackfin_clut224.o
 obj-$(CONFIG_LOGO_RN4Y56_CLUT224)   	+= logo_rn4y56_clut224.o
+obj-$(CONFIG_LOGO_RN4YD6_CLUT224)   	+= logo_rn4yd6_clut224.o
 obj-$(CONFIG_LOGO_RM4YC5_CLUT224)   	+= logo_rm4yc5_clut224.o
 obj-$(CONFIG_LOGO_BLACKFIN_VGA16)	+= logo_blackfin_vga16.o
 obj-$(CONFIG_LOGO_DEC_CLUT224)		+= logo_dec_clut224.o
