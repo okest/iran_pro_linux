@@ -1,6 +1,6 @@
 #include <linux/debug_uart.h>
 
-#define NUMBYTES 20
+#define NUMBYTES 1024
 
 
 
@@ -64,7 +64,7 @@ ssize_t  uart_debug_drv_read(struct file *filp, char __user *buf, size_t count, 
 		return -EIO; 
 	} 
 
-	pr_err("skb->data = %s\n",skb->data);
+	//pr_err("skb->data = %s\n",skb->data);
 #if 1
 	skb->data[skb->len - 1] = '\0';
 	if (copy_to_user(buf, skb->data, skb->len)) { 

@@ -38,7 +38,7 @@
 
 #define DEVICE_NAME "atlas7_uart_debug"
 
-#define UART_RX_BUF_SIZE 128
+#define UART_RX_BUF_SIZE 1024
 
 extern unsigned char uart_recv_buf[UART_RX_BUF_SIZE];
 

@@ -1060,7 +1060,8 @@ static void uart_recv_work_handle(struct work_struct *work)
 		return ;
 	}
 	
-	if(uart_recv_buf[0] != 'A' || uart_recv_buf[1] != '6' || uart_recv_buf[2] != '6' || uart_recv_buf[3] != 'A')
+	//if(uart_recv_buf[0] != 'A' || uart_recv_buf[1] != '6' || uart_recv_buf[2] != '6' || uart_recv_buf[3] != 'A')
+	if(uart_recv_buf[0] != 0x6a || uart_recv_buf[1] != 0xa6)
 	{
 		memset(uart_recv_buf, '\0', UART_RX_BUF_SIZE);
 		work_run_f = 0;
