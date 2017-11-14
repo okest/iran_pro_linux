@@ -8,13 +8,19 @@
 #include <linux/kernel.h>  
 #include <linux/uaccess.h>
 #include <linux/kdev_t.h>
-
+#include <linux/proc_fs.h>
+#include <linux/of_gpio.h>
+#include <linux/gpio.h>
 
 #define AUDIO_SLAVE_ADDRESS 0x40	
 #define AUDIO_INIT  "audio_init"
+#define AUDIO_ASP_MUTE  426
 
 unsigned char	audio_addr [19 ] = {0x01, 0x02, 0x03, 0x05, 0x06, 0x20, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x30, 0x41, 0x44, 0x47, 0x51, 0x54, 0x57, 0x75};
-unsigned char	audio_buf  [19 ] = {0xA4, 0x03, 0x01, 0x08, 0x00, 0x94, 0x80, 0x80, 0x80, 0x80, 0x80, 0X80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+unsigned char	audio_buf  [19 ] = {0xA4, 0x03, 0x09, 0x08, 0x00, 0x94, 0x80, 0x80, 0x80, 0x80, 0x80, 0X80, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+
+int gpio_asp_mute ;
 
 struct audio_data
 {
@@ -186,14 +192,8 @@ static int audio_probe(struct i2c_client *client,const struct i2c_device_id *id)
                 ret = audio_i2c_write(audio_addr[i],audio_buf[i]);
         }
 	
-#if 1 
-	int c = 1000,b =1000;
-	for(c; c > 0 ; c-- )
-	{
-		for(b; b> 0;b--)
-		{
-		}
-	}
+#if 0 
+	
 	unsigned char buf[2];
 	buf[0] = 0x01;
 	
@@ -261,12 +261,254 @@ static struct i2c_driver audio_driver = {
         	.of_match_table = audio_match_table,
    	},
 };
+#if 1
+
+static struct proc_dir_entry *BD37033_debug_proc = NULL;
+
+static ssize_t audio_read_proc(struct file *, char __user *, size_t, loff_t *);
+static ssize_t audio_write_proc(struct file *, const char __user *, size_t, loff_t *);
+
+static const struct file_operations audio_proc_ops = {
+    .owner = THIS_MODULE,
+    .read = audio_read_proc,
+    .write = audio_write_proc,
+};
+
+static ssize_t audio_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
+{
+	printk(KERN_EMERG "BD37033_debug_proc = %p\n",BD37033_debug_proc);
+	return 0;
+}
+#define		B_Q_0_5		0x00 
+#define		B_Q_1_0		0x01 
+#define		B_Q_1_5		0x02 
+#define		B_Q_2_0		0x03
+
+#define		B_fo_60		0x00
+#define		B_fo_80		0x10
+#define		B_fo_100	0x20
+#define		B_fo_120	0x30
+
+#define		M_Q_0_75	0x00 
+#define		M_Q_1_0		0x01 
+#define		M_Q_1_25	0x02 
+#define		M_Q_1_5		0x03
+
+#define		M_fo_0_5k	0x00
+#define		M_fo_1k		0x10
+#define		M_fo_1_5k	0x20
+#define		M_fo_2_5k	0x30
+
+#define		T_Q_0_75	0x00 
+#define		T_Q_1_25	0x01 
+
+
+#define		T_fo_7_5k	0x00
+#define		T_fo_10k	0x10
+#define		T_fo_12_5k	0x20
+#define		T_fo_15k	0x30
+
+#define		ASP_B_gain_addr	0x51
+#define		ASP_M_gain_addr	0x54
+#define		ASP_T_gain_addr	0x57
+unsigned char	ASP_EQ_addr [ 6 ] = { 	0x41, 	0x44, 	0x47, ASP_B_gain_addr, ASP_M_gain_addr, ASP_T_gain_addr };
+
+unsigned char	POPS_data [ 6 ] = { B_fo_120 | B_Q_1_5 ,M_fo_1k | M_Q_1_0 ,   T_fo_7_5k | T_Q_0_75 , 0x05, 0x00, 0x03 };
+unsigned char	CLASSIC_data [ 6 ] = { B_fo_80 | B_Q_1_0 ,M_fo_2_5k | M_Q_1_0 , T_fo_7_5k | T_Q_1_25 , 0x00, 0x05, 0x05 };
+unsigned char	ROCK_data [ 6 ]	= { B_fo_60 | B_Q_1_0 , M_fo_0_5k | M_Q_1_25 , T_fo_15k | T_Q_1_25 ,  0x09, 0x13, 0x07 };
+unsigned char	MOVIE_data [ 6 ] = { B_fo_120 | B_Q_0_5 ,M_fo_1k | M_Q_0_75 ,  T_fo_7_5k | T_Q_0_75 , 0x19, 0x05, 0x19 };
+unsigned char	JAZZ_data [ 6 ]	 = { B_fo_60 | B_Q_0_5 , M_fo_0_5k | M_Q_1_25 ,T_fo_15k | T_Q_0_75 ,  0x08, 0x13, 0x05 };
+
+#define	POPS_mode	22
+#define	CLASSIC_mode	23
+#define	ROCK_mode	24
+#define	MOVIE_mode	25
+#define	JAZZ_mode	26
+#define ASP_mute_on     27
+#define ASP_mute_off    28
+
+static ssize_t audio_write_proc(struct file *filp, const char __user *buffer, size_t count, loff_t *off)
+{
+	//com format : 01
+	int ret;
+	char recv[3];
+	unsigned char u8Data[2];
+	
+    if (copy_from_user(recv,buffer,count))
+        return -EFAULT;
+	
+	  recv[2] = '\0';
+
+	if(strcmp(recv,"01") == 0 )
+	{	 
+		u8Data[0] = 0x41;
+		u8Data[1] = 0x12;//q=1.5  f=80k
+		ret =i2c_write_buff(audio_client,u8Data, 2);
+		if( ret  < 0 )
+		{
+			printk(KERN_EMERG  " audio  i2c1_write_buff failed\n");
+			return -1;
+		}
+
+		printk(KERN_EMERG " line = %d bass cmd  %s  \n",__LINE__, recv);
+					
+	}
+	if(strcmp(recv,"02") == 0 )
+	{	 
+		u8Data[0] = 0x41;
+		u8Data[1] = 0x22;//q=1.5  f=100k
+		ret =i2c_write_buff(audio_client,u8Data, 2);
+		if( ret  < 0 )
+		{
+			printk(KERN_EMERG  " audio  i2c1_write_buff failed\n");
+			return -1;
+		}
+
+		printk(KERN_EMERG " line = %d bass cmd  %s  \n",__LINE__, recv);
+			
+		
+	}
+	if(strcmp(recv,"03") == 0 )
+	{	 
+		u8Data[0] = 0x41;
+		u8Data[1] = 0x32;//q=1.5  f=120k
+		ret =i2c_write_buff(audio_client,u8Data, 2);
+		if( ret  < 0 )
+		{
+			printk(KERN_EMERG  " audio  i2c1_write_buff failed\n");
+			return -1;
+		}
+
+		printk(KERN_EMERG " line = %d bass cmd  %s  \n",__LINE__, recv);
+	}
+//---------------------------------------------------------------------------------
+	if(strcmp(recv,"04") == 0 )
+	{	 
+		u8Data[0] = 0x41;
+		u8Data[1] = 0x13;//q=2.0  f=80k
+		ret =i2c_write_buff(audio_client,u8Data, 2);
+		if( ret  < 0 )
+		{
+			printk(KERN_EMERG  " audio  i2c1_write_buff failed\n");
+			return -1;
+		}
+
+		printk(KERN_EMERG " line = %d bass cmd  %s  \n",__LINE__, recv);
+	}
+	if(strcmp(recv,"05") == 0 )
+	{	 
+		u8Data[0] = 0x41;
+		u8Data[1] = 0x23;//q=2.0  f=100k
+		ret =i2c_write_buff(audio_client,u8Data, 2);
+		if( ret  < 0 )
+		{
+			printk(KERN_EMERG  " audio  i2c1_write_buff failed\n");
+			return -1;
+		}
+
+		printk(KERN_EMERG " line = %d bass cmd  %s  \n",__LINE__, recv);
+	}
+	if(strcmp(recv,"06") == 0 )
+	{	 
+		u8Data[0] = 0x41;
+		u8Data[1] = 0x33;//q=2.0  f=120k
+		ret =i2c_write_buff(audio_client,u8Data, 2);
+		if( ret  < 0 )
+		{
+			printk(KERN_EMERG  " audio  i2c1_write_buff failed\n");
+			return -1;
+		}
+
+		printk(KERN_EMERG " line = %d bass cmd  %s  \n",__LINE__, recv);
+	}
+
+	//-----------------EQ--in--------------------------
+	//-----------------EQ--out-------------------------
+	int mode;
+	int i = 0;
+
+	kstrtoint(recv,10,&mode);
+	
+	printk(KERN_EMERG "zjc  mode is  %d  (mode is  %d )\n",__LINE__, mode);
+	switch(mode)
+	{
+		case (POPS_mode):
+		{	
+			 for (i=0;i<6;i++)
+       			 {
+              			  audio_i2c_write(ASP_EQ_addr[i],POPS_data[i]);
+       			 }	
+			 break;
+		 }
+		case (CLASSIC_mode): 
+		{
+			for (i=0;i<6;i++)
+       			 {
+              			  audio_i2c_write(ASP_EQ_addr[i],CLASSIC_data[i]);
+       			 }	
+						break;	
+		 }
+		case (ROCK_mode): 
+		{
+			for (i=0;i<6;i++)
+       			 {
+              			  audio_i2c_write(ASP_EQ_addr[i],ROCK_data[i]);
+       			 }		
+						break;
+		 }
+		case (MOVIE_mode): 
+		{
+			for (i=0;i<6;i++)
+       			 {
+              			  audio_i2c_write(ASP_EQ_addr[i], MOVIE_data[i]);
+       			 }	
+			break;
+			
+		 }
+		case (JAZZ_mode): 
+		{
+			for (i=0;i<6;i++)
+       			 {
+              			  audio_i2c_write(ASP_EQ_addr[i],JAZZ_data[i]);
+       			 }	
+			break;
+		 }
+		case(ASP_mute_on):
+		{
+			//gpio_set_value(AUDIO_ASP_MUTE,0);
+    			gpio_direction_output(AUDIO_ASP_MUTE, 0);
+    			//int value = gpio_get_value(AUDIO_ASP_MUTE);
+		 	//printk(KERN_EMERG "---------mute init value_mute = %d----------\n",value);
+			break;
+		}	
+		case(ASP_mute_off):
+		{
+			
+			//gpio_set_value(AUDIO_ASP_MUTE,1);
+    			gpio_direction_output(AUDIO_ASP_MUTE,1);
+    			//int value = gpio_get_value(AUDIO_ASP_MUTE);
+    			//printk(KERN_EMERG "---------mute init value_mute = %d----------\n",value);
+			break;
+		}
+	}
+	return count;
+}
+
+#endif
 
 static int __init audio_init(void)
 {
-	int ret =-1;
+    int ret = -1;
+    int value;
 	
     i2c_add_driver(&audio_driver);
+
+    value = gpio_get_value(AUDIO_ASP_MUTE);
+    printk(KERN_EMERG "---------mute init value_mute = %d----------\n",value);
+    gpio_direction_output(AUDIO_ASP_MUTE,value);
+
+    // Create proc file system
+    BD37033_debug_proc = proc_create("audio_bass", 0666, NULL, &audio_proc_ops);
 
 	ret = misc_register(&audio_i2c_miscdev);
 	if (ret < 0) 
@@ -277,9 +519,9 @@ static int __init audio_init(void)
     return 0; 
 }
 
+
 static void __exit audio_exit(void)
 {
-	//FMS_DBG("  \n");
 
     misc_deregister(&audio_i2c_miscdev);
 
