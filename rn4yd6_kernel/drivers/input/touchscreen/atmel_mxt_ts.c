@@ -2007,6 +2007,7 @@ static int mxt_acquire_irq(struct mxt_data *data)
 		/* Presence of data->irq means IRQ initialised */
 		data->irq = data->client->irq;
 	} else {
+		disable_irq(data->irq);
 		LOGD("Now enable the irq hei hei");
 		enable_irq(data->irq);
 	}
