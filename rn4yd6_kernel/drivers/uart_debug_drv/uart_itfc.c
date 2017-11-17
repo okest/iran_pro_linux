@@ -7,11 +7,10 @@
 static unsigned char communicate_buf[NUMBYTES];
 wait_queue_head_t read_wait_queue;
 
-int uart_debug_drv_open(struct inode *inode, struct file *filp)
-{	
-	LOGD("------------------uart_debug_drv_open------------------------");
-	//itfc_startup_uart();
-	//debug_sirfsoc_uart_startup();
+static int __uart3_init_kthread(void *data)
+{
+	unsigned long ul_jiffies = msecs_to_jiffies(100);
+	schedule_timeout_interruptible(ul_jiffies);
 	memset(uart_recv_buf,0,UART_RX_BUF_SIZE);
 	debug_uart_switch_to_pio();
 	debug_uart_port_startup();
@@ -20,11 +19,17 @@ int uart_debug_drv_open(struct inode *inode, struct file *filp)
 	return 0;
 }
 
+int uart_debug_drv_open(struct inode *inode, struct file *filp)
+{	
+	LOGD("------------------uart_debug_drv_open------------------------");
+	//itfc_startup_uart();
+	//debug_sirfsoc_uart_startup();
+	return 0;
+}
+
 int uart_debug_drv_close(struct inode *inode, struct file *filp)
 {	
 	LOGD("-------------------uart_debug_drv_close-----------------------");
-	debug_uart_port_close();
-	debug_uart_recv_work_deinit();
 	return 0;
 }
 
@@ -46,7 +51,7 @@ ssize_t  uart_debug_drv_read(struct file *filp, char __user *buf, size_t count, 
 	struct sk_buff *skb; 
 //	int bytes_len = 0;
 	
-	LOG_ERR("uart_debug_drv_read--------skb_queue_empty(&uart_recv_queue) = %d",skb_queue_empty(&uart_recv_queue));
+	LOGD("uart_debug_drv_read--------skb_queue_empty(&uart_recv_queue) = %d",skb_queue_empty(&uart_recv_queue));
 #if 0	
 	if (skb_queue_empty(&uart_recv_queue)) 
 	{
@@ -65,8 +70,9 @@ ssize_t  uart_debug_drv_read(struct file *filp, char __user *buf, size_t count, 
 	} 
 
 	//pr_err("skb->data = %s\n",skb->data);
+	//print_hex_dump(KERN_ERR,"",DUMP_PREFIX_OFFSET,16,1,skb->data,skb->len,1);
 #if 1
-	skb->data[skb->len - 1] = '\0';
+	//skb->data[skb->len - 1] = '\0';
 	if (copy_to_user(buf, skb->data, skb->len)) { 
 		LOG_ERR("copy_to_user is fault!");
 		return -EFAULT; 
@@ -112,6 +118,7 @@ static int __init uart_itfc_init(void)
 		LOG_ERR("failed to misc_register");
 		goto misc_exit;
 	}
+	kthread_run(__uart3_init_kthread, NULL, "uart3_init");
 	
 	return 0;
 misc_exit:
@@ -122,6 +129,8 @@ misc_exit:
 static void __exit uart_itfc_exit(void)
 {
 	misc_deregister(&uart_debug_cdev);
+	debug_uart_port_close();
+	debug_uart_recv_work_deinit();
 }
 
 module_init(uart_itfc_init);

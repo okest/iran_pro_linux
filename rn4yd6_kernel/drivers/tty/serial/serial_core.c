@@ -300,8 +300,8 @@ int debug_uart_port_startup(void)
 #else
 	memset(debug_save_init_termios,0,sizeof(struct ktermios));
 
-	debug_save_init_termios->c_ispeed = B115200;
-	debug_save_init_termios->c_ispeed = B115200;
+	debug_save_init_termios->c_ispeed = B38400;
+	debug_save_init_termios->c_ispeed = B38400;
 
 	debug_save_init_termios->c_cflag |= CLOCAL;
 	debug_save_init_termios->c_cflag |= CREAD;
@@ -322,7 +322,8 @@ int debug_uart_port_startup(void)
 	debug_save_init_termios->c_cc[VTIME] = 1; /* 读取一个字符等待1*(1/10)s */      
     debug_save_init_termios->c_cc[VMIN] = 1;
 	uport->ops->set_mctrl(uport,6);
-	tty_termios_encode_baud_rate(debug_save_init_termios, 115200, 115200);
+	//tty_termios_encode_baud_rate(debug_save_init_termios, 115200, 115200);
+	tty_termios_encode_baud_rate(debug_save_init_termios, 38400, 38400);
 	debug_sirfsoc_uart_set_termios(uport,debug_save_init_termios,NULL);
 	//uport->ops->set_mctrl(uport,6);
 #endif

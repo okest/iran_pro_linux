@@ -30,6 +30,7 @@
 #include <linux/skbuff.h>  
 #include <linux/sched.h> 
 #include <linux/jiffies.h>	
+#include <linux/kthread.h>
 
 #include <linux/serial_core.h>
 

@@ -338,14 +338,16 @@ void debug_uart_rx(struct uart_port *port, unsigned int max_rx_count)
 	struct sirfsoc_uart_port *sirfport = to_sirfport(port);
 	struct sirfsoc_register *ureg = &sirfport->uart_reg->uart_reg;
 	struct sirfsoc_fifo_status *ufifo_st = &sirfport->uart_reg->fifo_status;
-	unsigned int ch, rx_count = 0;
+	unsigned int rx_count = 0;
+	unsigned char ch;
 
 	while (!(rd_regl(port, ureg->sirfsoc_rx_fifo_status) & ufifo_st->ff_empty(port))) {
 		ch = rd_regl(port, ureg->sirfsoc_rx_fifo_data) |
 			SIRFUART_DUMMY_READ;
-		LOGD("ch = %c",ch);
+		//LOGD("ch = 0x%x",ch);
 		if(ch != '~' && ch != ' ')
 		{
+			LOGD("ch = 0x%x",ch);
 			uart_recv_buf[read_count] = ch;//save char
 			rx_count++;
 			read_count++;
@@ -1048,13 +1050,13 @@ static void uart_recv_work_handle(struct work_struct *work)
 	unsigned int sk_len = 0;
 
 	uart_rx_timeout_delay(13);//timeout for RX
-	uart_recv_buf[read_count] = '\0';
-	read_count++;
+	//uart_recv_buf[read_count] = '\0';
+	//read_count++;
 	sk_len = read_count + 1;
-	
+	//print_hex_dump(KERN_ERR,"rxhu",DUMP_PREFIX_OFFSET,16,1,uart_recv_buf,sk_len,1);
 	if(sk_len <= 4)
 	{
-		memset(uart_recv_buf, '\0', UART_RX_BUF_SIZE);
+		memset(uart_recv_buf,0, UART_RX_BUF_SIZE);
 		work_run_f = 0;
 		read_count = 0;
 		return ;
@@ -1063,7 +1065,7 @@ static void uart_recv_work_handle(struct work_struct *work)
 	//if(uart_recv_buf[0] != 'A' || uart_recv_buf[1] != '6' || uart_recv_buf[2] != '6' || uart_recv_buf[3] != 'A')
 	if(uart_recv_buf[0] != 0x6a || uart_recv_buf[1] != 0xa6)
 	{
-		memset(uart_recv_buf, '\0', UART_RX_BUF_SIZE);
+		memset(uart_recv_buf, 0, UART_RX_BUF_SIZE);
 		work_run_f = 0;
 		read_count = 0;
 		return ;
@@ -1078,15 +1080,16 @@ static void uart_recv_work_handle(struct work_struct *work)
 
 	skbdata = skb_put(skb,sk_len);//获取skb数据部分的指针
 
-	strncpy(skbdata, uart_recv_buf, sk_len);
+	//strncpy(skbdata, uart_recv_buf, sk_len);
+	memcpy(skbdata, uart_recv_buf, sk_len);
 
 	skb_queue_tail(&(uart_recv_queue), skb);  
 
-	LOG_ERR("come to schedule end!");
-
+	//LOG_ERR("come to schedule end!");
+	//print_hex_dump(KERN_ERR,"rxhu",DUMP_PREFIX_OFFSET,16,1,skb->data,sk_len,1);
 	/*clear the falg*/
 	wake_up_interruptible(&read_wait_queue);
-	memset(uart_recv_buf, '\0', UART_RX_BUF_SIZE);
+	memset(uart_recv_buf, 0, UART_RX_BUF_SIZE);
 	work_run_f = 0;
 	read_count = 0;
 
