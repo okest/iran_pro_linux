@@ -146,12 +146,12 @@ static void print_current_task_info(int line)
 
 static void set_camera_gpio_high(void)
 {
-	gpio_direction_output( RVC_POWER_GPIO_NUM, 1);	
+	//gpio_direction_output( RVC_POWER_GPIO_NUM, 1);	
 }
 
 static void set_camera_gpio_low(void)
 {
-	gpio_direction_output( RVC_POWER_GPIO_NUM, 0);	
+	//gpio_direction_output( RVC_POWER_GPIO_NUM, 0);	
 }
 
 #if 0
