@@ -912,6 +912,7 @@ int rv_get_display_info(struct rv_dev *rv,int layersnum)
 		return -ENXIO;
 
 	rv->d_info.panel = sirfsoc_vdss_find_panel(rv->d_info.display,rv_panel_match);
+	//rv->d_info.panel = sirfsoc_vdss_get_secondary_device();
 	if (!rv->d_info.panel)
 	{
 		rv->d_info.panel = sirfsoc_vdss_get_primary_device();

@@ -1815,7 +1815,7 @@ static irqreturn_t sirfsoc_lcdc_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-extern int g_rvc_err_flag;
+extern int g_rvc_err_flag;//add rxhu
 
 static void lcdc_err_worker(struct work_struct *work)
 {
@@ -1838,7 +1838,7 @@ static void lcdc_err_worker(struct work_struct *work)
 	errors = lcdc_irq->err_irqs;
 	lcdc_irq->err_irqs = 0;
 	spin_unlock_irqrestore(&lcdc_irq->irq_lock, flags);
-
+	
 	g_rvc_err_flag = 1;	
 	printk(KERN_ERR"[%s][%d] get_num_layers =%d  g_rvc_err_flag =1 \n",__func__, __LINE__, sirfsoc_vdss_get_num_layers(plcdc->id),g_rvc_err_flag );
 
@@ -1848,29 +1848,30 @@ static void lcdc_err_worker(struct work_struct *work)
 
 		l = sirfsoc_vdss_get_layer(plcdc->id, i);
 		if (!l) {
-			//VDSSERR("failed to get layer%d for lcdc%d\n",i, plcdc->id);
-			printk(KERN_ERR"[%s][%d] ******failed to get layer%d for lcdc%d \n",__func__, __LINE__, l->name );
-
+			//VDSSERR("failed to get layer%d for lcdc%d\n",
+				//i, plcdc->id);
 			continue;
 		}
 
 		bit = fifo_abnormal_bits[i];
+
 		if (bit & errors) {
-			//VDSSERR("FIFO exception on %s,disable the layer\n",l->name);
+		//	VDSSERR("FIFO exception on %s,disable the layer\n",
+			//	l->name);
 			g_rvc_err_flag = 1;	
 			printk(KERN_ERR"[%s][%d] ******FIFO exception on %s,disable the layer  g_rvc_err_flag =%d\n",__func__, __LINE__, l->name,g_rvc_err_flag );
-
 			/*
 			* Fix me. Temporarily, do not disable layer
 			* when underflow and overflow happen.
 			* Need to fix later.
 			*/
-#if 0
+#if 0// rxhu
 			l->disable(l);
 			msleep(50);
 #endif
 		}
 	}
+
 
 	spin_lock_irqsave(&lcdc_irq->irq_lock, flags);
 	lcdc_irq->irq_err_mask |= errors;

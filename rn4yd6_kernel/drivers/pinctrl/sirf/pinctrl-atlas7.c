@@ -3213,7 +3213,7 @@ static struct atlas7_pad_mux ld_ldd_grp_pad_mux[] = {
 	MUX(1, 72, 1, N, N, N, N),
 	MUX(1, 74, 2, N, N, N, N),
 	MUX(1, 75, 2, N, N, N, N),
-#ifndef CONFIG_FORYOU_RN4Y56
+#ifdef CONFIG_FORYOU_RN4Y56
 	MUX(1, 76, 2, N, N, N, N),
 	MUX(1, 77, 2, N, N, N, N),
 #endif
@@ -3231,7 +3231,7 @@ static struct atlas7_grp_mux ld_ldd_grp_mux = {
 };
 
 static struct atlas7_pad_mux ld_ldd_16bit_grp_pad_mux[] = {
-#ifndef CONFIG_FORYOU_RN4Y56
+#ifdef CONFIG_FORYOU_RN4Y56
 	MUX(1, 57, 1, N, N, N, N),
 	MUX(1, 58, 1, N, N, N, N),
 	MUX(1, 59, 1, N, N, N, N),
@@ -3240,16 +3240,16 @@ static struct atlas7_pad_mux ld_ldd_16bit_grp_pad_mux[] = {
 	MUX(1, 62, 1, N, N, N, N),
 	MUX(1, 63, 1, N, N, N, N),
 	MUX(1, 64, 1, N, N, N, N),
-	MUX(1, 65, 1, N, N, N, N),
+	MUX(1, 65, 1, N, N, N, N),//
 	MUX(1, 66, 1, N, N, N, N),
 	MUX(1, 67, 1, N, N, N, N),
 	MUX(1, 68, 1, N, N, N, N),
 	MUX(1, 69, 1, N, N, N, N),
 	MUX(1, 70, 1, N, N, N, N),
 	MUX(1, 71, 1, N, N, N, N),
-	MUX(1, 72, 1, N, N, N, N),
-	MUX(1, 56, 1, N, N, N, N),
-	MUX(1, 53, 1, N, N, N, N),
+	MUX(1, 72, 1, N, N, N, N),//
+	MUX(1, 56, 1, N, N, N, N),//--
+	MUX(1, 53, 1, N, N, N, N),//--
 #else
 	MUX(1, 57, 0, N, N, N, N),
 	MUX(1, 58, 0, N, N, N, N),
@@ -3280,7 +3280,7 @@ static struct atlas7_grp_mux ld_ldd_16bit_grp_mux = {
 
 
 static struct atlas7_pad_mux ld_ldd_fck_grp_pad_mux[] = {
-#ifndef CONFIG_FORYOU_RN4Y56
+#ifdef CONFIG_FORYOU_RN4Y56
 	MUX(1, 55, 1, N, N, N, N),
 #else
 	MUX(1, 55, 0, N, N, N, N),
@@ -4513,18 +4513,18 @@ static struct atlas7_grp_mux vi_vip1_ext_grp_mux = {
 };
 
 static struct atlas7_pad_mux vi_vip1_low8bit_grp_pad_mux[] = {
-#ifndef CONFIG_FORYOU_RN4Y56
-	MUX(1, 74, 1, N, N, N, N),
-	MUX(1, 75, 1, N, N, N, N),
-	MUX(1, 76, 1, N, N, N, N),
-	MUX(1, 77, 1, N, N, N, N),
-	MUX(1, 78, 1, N, N, N, N),
-	MUX(1, 79, 1, N, N, N, N),
-	MUX(1, 80, 1, N, N, N, N),
-	MUX(1, 81, 1, N, N, N, N),
-	MUX(1, 82, 1, N, N, N, N),
-	MUX(1, 83, 1, N, N, N, N),
-	MUX(1, 84, 1, N, N, N, N),
+#ifdef CONFIG_FORYOU_RN4Y56
+	MUX(1, 74, 2, N, N, N, N),
+	MUX(1, 75, 2, N, N, N, N),
+	MUX(1, 76, 2, N, N, N, N),
+	MUX(1, 77, 2, N, N, N, N),
+	MUX(1, 78, 2, N, N, N, N),
+	MUX(1, 79, 2, N, N, N, N),
+	MUX(1, 80, 2, N, N, N, N),
+	MUX(1, 81, 2, N, N, N, N),
+	MUX(1, 82, 0, N, N, N, N),
+	MUX(1, 83, 0, N, N, N, N),
+	MUX(1, 84, 0, N, N, N, N),
 #else
 	MUX(1, 74, 0, N, N, N, N),
 	MUX(1, 75, 0, N, N, N, N),

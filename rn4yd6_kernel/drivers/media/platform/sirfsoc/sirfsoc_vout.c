@@ -2430,12 +2430,17 @@ static int sirfsoc_vout_create_video_devices(struct platform_device *pdev)
 		}
 		vid_dev->vouts[i] = vout;
 		vout->vid_dev = vid_dev;
-		vout->display =
-			vid_dev->display[i / SIRFSOC_MAX_VOUT_ON_EACH_DISPLAY];
+		if(0 == i / SIRFSOC_MAX_VOUT_ON_EACH_DISPLAY)
+			vout->display =
+				vid_dev->display[1];//add
+		else
+			vout->display =
+				vid_dev->display[0];//add
 
 		vout->di_mode = VDSS_VPP_3MEDIAN;
 		sirfsoc_setup_video_data(vout);
-
+		//dev_err(&pdev->dev, "vid_dev->display[i / SIRFSOC_MAX_VOUT_ON_EACH_DISPLAY]->name = %s\n",\
+			vid_dev->display[i / SIRFSOC_MAX_VOUT_ON_EACH_DISPLAY]->name);
 		/* the internal index in each display, from 0 to 'MAX -1' */
 		index = i % SIRFSOC_MAX_VOUT_ON_EACH_DISPLAY;
 		sirfsoc_setup_video_device(vout, index);

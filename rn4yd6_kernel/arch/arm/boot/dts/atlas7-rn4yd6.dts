@@ -44,7 +44,9 @@
 		spi4 = &usp3;
 		tunex1 = &sd5;
 		tunex2 = &sd9;
-		display0 = &lvds;
+		//display0 = &lvds;
+		display1 = &lvds;
+		display0 = &rgb;
 	};
 
 	cpus {
@@ -2774,10 +2776,16 @@
 				    compatible = "audio_init,audio";
 				    reg = <0x40>;
 				    };
+					
+					CH7025@76 {
+						compatible = "rgb_to_cvbs";
+						//ch7025_en = <&gpio_1 46 0>;
+						reg = <0x76>;
+					};
    				};
 			
 			i2c2: i2c2@2 {
-				compatible = "i2c-gpio";
+				//compatible = "i2c-gpio";
 				gpios = <&gpio_1 38 0 /* sda */
 					     &gpio_1 37 0 /* scl */
 					    >;
@@ -3883,28 +3891,31 @@
 				resets = <&car 72>;
 			};
 		};
-
+		
 		rgb: display@0 {
 			compatible = "rgb-panel";
 			source = "rgb.0";
-			status = "disabled";
+			status = "okay";
+			/*status = "disabled";*/
 			pinctrl-names = "default";
 			pinctrl-0 = <&ld_ldd_16bit_pmx &ld_ldd_fck_pmx
-					&ld_ldd_lck_pmx>;
+					&ld_ldd_lck_pmx &vi_vip1_low8bit_pmx>;
+			//pinctrl-0 = <&ld_ldd_pmx &ld_ldd_fck_pmx &ld_ldd_lck_pmx>;
 
-			data-lines  = <16>;
+			//data-lines  = <16>;
+			data-lines  = <24>;// to rgb888
 
 			display-timings {
 				native-mode = <&timing0>;
 				timing0: timing0 {
-					clock-frequency = <40000000>;
+					clock-frequency = <33300000>;
 					hactive = <800>;
 					vactive = <480>;
-					hfront-porch = <210>;
-					hback-porch = <45>;
+					hfront-porch = <204>;
+					hback-porch = <43>;
 					hsync-len = <1>;
-					vback-porch = <22>;
-					vfront-porch = <132>;
+					vback-porch = <23>;
+					vfront-porch = <22>;
 					vsync-len = <1>;
 					hsync-active = <0>;
 					vsync-active = <0>;
@@ -3916,7 +3927,7 @@
 		
 		lvds: display@1 {
 			compatible = "lvds-panel";
-			source = "lvds.0";
+			source = "lvds.1";
 			status = "okay";
 
 			data-lines  = <24>;
@@ -3942,7 +3953,7 @@
 				};
 			};
 		};
-
+		
 		hdmi: display@2 {
 			compatible = "hdmi-panel";
 			source = "rgb.0";
@@ -3950,7 +3961,7 @@
 			status = "disabled";
 			pinctrl-names = "default";
 			pinctrl-0 = <&ld_ldd_16bit_pmx &ld_ldd_fck_pmx
-				&ld_ldd_lck_pmx>;
+				&ld_ldd_lck_pmx &vi_vip1_low8bit_pmx>;
 
 			data-lines  = <16>;
 
@@ -4000,7 +4011,7 @@
 			rearview_key {
 				label = "rearview key";
 				linux,code = <KEY_CAMERA>;
-				gpios = <&gpio_1 56 GPIO_ACTIVE_LOW>;
+				gpios = <&gpio_1 96 GPIO_ACTIVE_LOW>;
 				debounce-interval = <5>;
 			};
 		};
@@ -4013,7 +4024,7 @@
 			     <0x188D001C 0x4>;  /* IPC MSG */
 			mirror = <0>;
 			source-std = "AUTO";		/* NTSC or PAL */
-			display-panel = "display0";	/* display 0/1 */
+			display-panel = "display1";	/* display 0/1 */
 		};
 		
 		audio_switcher{

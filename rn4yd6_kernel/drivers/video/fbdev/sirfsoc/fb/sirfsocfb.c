@@ -1342,8 +1342,40 @@ static int sirfsocfb_init_displays(struct sirfsocfb_device *fbdev)
 	fbdev->num_displays = 0;
 	panel = NULL;
 
-	panel = sirfsoc_vdss_get_primary_device();
+	/******************************lcd 1 begin**************************/	
+	if (sirfsoc_vdss_get_num_lcdc() > 1) {
+		panel = sirfsoc_vdss_get_secondary_device();
+		//panel = sirfsoc_vdss_get_primary_device();
+		
+		if (panel == NULL)
+			goto out;
+		sirfsoc_vdss_get_panel(panel);
+		if (panel->driver == NULL) {
+			dev_warn(fbdev->dev, "no driver for secondary display: %s\n",
+				panel->name);
+			sirfsoc_vdss_put_panel(panel);
+			goto out;
+		}
+		//dev_err(fbdev->dev, "fb secondary display is panel->name = %s\n",panel->name);
+		//printk(KERN_ERR"fb primary display is panel->name = %s\n",panel->name);
+		d = &fbdev->displays[fbdev->num_displays++];
+		d->lcdc_index = SIRFSOC_VDSS_LCDC1;
+		d->num_layers = sirfsoc_vdss_get_num_layers(d->lcdc_index);
+		for (i = 0; i < d->num_layers; i++)
+			d->layers[i] = sirfsoc_vdss_get_layer(d->lcdc_index, i);
+		d->num_screens = sirfsoc_vdss_get_num_screens(d->lcdc_index);
+		for (i = 0; i < d->num_screens; i++)
+			d->screens[i] =
+				sirfsoc_vdss_get_screen(d->lcdc_index, i);
 
+		d->panel = panel;
+		//printk(KERN_ERR"fb secondary display is panel->name = %s\n",d->panel->name);
+	}
+/******************************lcd 1 end**************************/
+	
+	panel = sirfsoc_vdss_get_primary_device();
+	//panel = sirfsoc_vdss_get_secondary_device();
+	
 	if (panel == NULL) {
 		dev_err(fbdev->dev, "no primary display available\n");
 		goto err;
@@ -1356,11 +1388,12 @@ static int sirfsocfb_init_displays(struct sirfsocfb_device *fbdev)
 		sirfsoc_vdss_put_panel(panel);
 		goto err;
 	}
-
+	//dev_err(fbdev->dev, "fb primary display is panel->name = %s\n",panel->name);
+	
 	d = &fbdev->displays[fbdev->num_displays++];
 	d->panel = panel;
 	d->lcdc_index = SIRFSOC_VDSS_LCDC0;
-
+	//printk(KERN_ERR"fb primary display is panel->name = %s\n",d->panel->name);
 	d->num_layers = sirfsoc_vdss_get_num_layers(d->lcdc_index);
 	for (i = 0; i < d->num_layers; i++)
 		d->layers[i] = sirfsoc_vdss_get_layer(d->lcdc_index, i);
@@ -1368,30 +1401,8 @@ static int sirfsocfb_init_displays(struct sirfsocfb_device *fbdev)
 	d->num_screens = sirfsoc_vdss_get_num_screens(d->lcdc_index);
 	for (i = 0; i < d->num_screens; i++)
 		d->screens[i] = sirfsoc_vdss_get_screen(d->lcdc_index, i);
-
-	if (sirfsoc_vdss_get_num_lcdc() > 1) {
-		panel = sirfsoc_vdss_get_secondary_device();
-		if (panel == NULL)
-			goto out;
-		sirfsoc_vdss_get_panel(panel);
-		if (panel->driver == NULL) {
-			dev_warn(fbdev->dev, "no driver for secondary display: %s\n",
-				panel->name);
-			sirfsoc_vdss_put_panel(panel);
-			goto out;
-		}
-		d = &fbdev->displays[fbdev->num_displays++];
-		d->lcdc_index = SIRFSOC_VDSS_LCDC1;
-		d->num_layers = sirfsoc_vdss_get_num_layers(d->lcdc_index);
-		for (i = 0; i < d->num_layers; i++)
-			d->layers[i] = sirfsoc_vdss_get_layer(d->lcdc_index, i);
-		d->num_screens = sirfsoc_vdss_get_num_screens(d->lcdc_index);
-		for (i = 0; i < d->num_screens; i++)
-			d->screens[i] =
-				sirfsoc_vdss_get_screen(d->lcdc_index, i);
-
-		d->panel = panel;
-	}
+	
+	
 
 out:
 	return 0;
