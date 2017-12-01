@@ -13,7 +13,10 @@
  * option) any later version.
  *
  */
-
+#include <linux/fs.h>
+#include <linux/kernel.h>
+#include <linux/proc_fs.h>
+#include <linux/string.h>
 #include <linux/acpi.h>
 #include <linux/dmi.h>
 #include <linux/module.h>
@@ -231,6 +234,63 @@ enum t100_type {
 #define MXT_PIXELS_PER_MM	20
 
 #define DEBUG_MSG_MAX		200
+
+//------------------------------ACC in
+static struct proc_dir_entry *atmel_ts_enable_irq = NULL;
+
+unsigned int irq_all;
+
+static ssize_t atmel_ts_enable_read_proc(struct file *, char __user *, size_t, loff_t *);
+static ssize_t atmel_ts_enable_write_proc(struct file *, const char __user *, size_t, loff_t *);
+
+static const struct file_operations enable_proc_ops = {
+    .owner = THIS_MODULE,
+    .read = atmel_ts_enable_read_proc,
+    .write = atmel_ts_enable_write_proc,
+};
+
+static ssize_t atmel_ts_enable_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
+{
+	printk("ts irq = %d\n",irq_all);
+	return 0;
+}
+int TS_ACC_FLAG = 0;
+static ssize_t atmel_ts_enable_write_proc(struct file *filp, const char __user *buffer, size_t count, loff_t *off)
+{
+//	int ret;
+	char recv[3];
+	
+//    	copy_from_user(recv,buffer,count);
+	memcpy(recv,buffer,count);
+ //       return -EFAULT;
+	
+	recv[2] ='\0';
+	
+	if(strcmp(recv,"01") == 0 )
+	{	 
+		if(TS_ACC_FLAG == 1)
+        	{
+           		TS_ACC_FLAG = 0;
+				enable_irq(irq_all);
+				printk(KERN_EMERG"[%d][ACC ON]  enable_irq is %s  \n",__LINE__, recv);				
+			}
+	}
+	
+	if(strcmp(recv,"02") == 0)
+	{
+		if(TS_ACC_FLAG == 0)
+        	{
+				TS_ACC_FLAG = 1;
+				disable_irq(irq_all);
+				printk(KERN_EMERG"[%d][ACC OFF] disable_irq is  %s\n",__LINE__, recv);
+			}
+	}	
+
+	return count;
+}
+
+//------------------------------ACC out
+
 
 struct mxt_info {
 	u8 family_id;
@@ -3822,6 +3882,10 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto err_free_irq;
 	LOGD("data->suspended = %d , data->in_bootloader = %d",data->suspended,data->in_bootloader);
 	
+	// Create proc file system
+	irq_all = data->irq;
+	printk("ts irq = %d \n",irq_all);
+	atmel_ts_enable_irq = proc_create("ts_ops", 0666, NULL, &enable_proc_ops);
 	//add rxhu
 		LOGD("data->suspended = %d",data->suspended);
 		mxt_process_messages_until_invalid(data);
