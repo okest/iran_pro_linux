@@ -341,7 +341,7 @@ static int _pwm_backlight_probe(struct platform_device *pdev)
 
 	bl->props.brightness = data->dft_brightness;
 	bl_dev = bl;
-	//backlight_update_status(bl);
+	backlight_update_status(bl);
 
 	platform_set_drvdata(pdev, bl);
 	return 0;
