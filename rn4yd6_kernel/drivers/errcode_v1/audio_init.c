@@ -11,13 +11,19 @@
 #include <linux/proc_fs.h>
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
+#include <linux/string.h>
+
 
 #define AUDIO_SLAVE_ADDRESS 0x40	
 #define AUDIO_INIT  "audio_init"
 #define AUDIO_ASP_MUTE  426
 
+//unsigned char	audio_addr [19 ] = {0x01, 0x02, 0x03, 0x05, 0x06, 0x20, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x30, 0x41, 0x44, 0x47, 0x51, 0x54, 0x57, 0x75};
+//unsigned char	audio_buf  [19 ] = {0xA4, 0x03, 0x09, 0x08, 0x00, 0x94, 0x80, 0x80, 0x80, 0x80, 0x80, 0X80, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+
 unsigned char	audio_addr [19 ] = {0x01, 0x02, 0x03, 0x05, 0x06, 0x20, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x30, 0x41, 0x44, 0x47, 0x51, 0x54, 0x57, 0x75};
-unsigned char	audio_buf  [19 ] = {0xA4, 0x03, 0x09, 0x08, 0x00, 0x94, 0x80, 0x80, 0x80, 0x80, 0x80, 0X80, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+unsigned char	audio_buf  [19 ] = {0xE4, 0x03, 0x09, 0x08, 0x09, 0x89, 0x80, 0x80, 0x80, 0x80, 0x80, 0X80, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 //unsigned char	audio_addr [15 ] = {0x01, 0x02, 0x03, 0x05, 0x06, 0x20, 0x28, 0x29 ,0x2A, 0x2B, 0x2C, 0x30, 0x41, 0x51, 0x75};
 //unsigned char	audio_buf  [15 ] = {0xA4, 0x0B, 0x09, 0x08, 0x0f, 0x86, 0x80, 0x80 ,0x80, 0x80, 0x80, 0x80, 0x33, 0x0f, 0x0f};
@@ -102,7 +108,7 @@ static ssize_t audio_read(struct file *filp, char __user *buf, size_t count, lof
 
 static int i2c_write_buff(struct i2c_client *client,unsigned char  *buf,int  len)
 {
-    	int ret=-1; 
+    int ret=-1; 
 	struct i2c_msg msgs;
     
 	int i=0;
@@ -495,6 +501,61 @@ static ssize_t audio_write_proc(struct file *filp, const char __user *buffer, si
 	}
 	return count;
 }
+//add  new func -----------------------------------------------------
+
+static struct proc_dir_entry *addr_value_proc = NULL;
+
+static ssize_t audio_addr_read_proc(struct file *, char __user *, size_t, loff_t *);
+static ssize_t audio_addr_write_proc(struct file *, const char __user *, size_t, loff_t *);
+
+static const struct file_operations audio_debug_proc_ops = {
+    .owner = THIS_MODULE,
+    .read = audio_addr_read_proc,
+    .write = audio_addr_write_proc,
+};
+static ssize_t audio_addr_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
+{
+	printk(KERN_EMERG " addr_value_proc = %p\n",addr_value_proc);
+	return 0;
+}
+
+static ssize_t audio_addr_write_proc(struct file *filp, const char __user *buffer, size_t count, loff_t *off)
+{
+	
+	char recv[128];
+	char recv_2[128];		//addr
+	char recv_3[128];		//value
+	
+	unsigned char addr;
+	unsigned char value;
+	
+	
+    if (copy_from_user(recv,buffer,count))
+        return -EFAULT;
+	
+	int len = strlen(recv);
+	printk(KERN_EMERG "proc  str len is  = %d\n",len);
+	//if(len > 8)
+	//{
+	//	printk(KERN_EMERG " len is too long  : 0x210x21\n");
+	//	return 0;
+	//}
+	
+	strcpy(recv_2,recv);
+	recv_2[4] = '\0';
+	
+	strcpy(recv_3,&recv[4]);
+	recv_3[4] = '\0';
+	
+	addr  = simple_strtoul(recv_2,NULL,0);
+	value = simple_strtoul(recv_3,NULL,0);
+	
+	printk(KERN_EMERG " addr = %p   value = %p  \n",addr,value);
+	
+	audio_i2c_write(addr,value);
+	return count;
+}
+
 
 #endif
 
@@ -512,6 +573,9 @@ static int __init audio_init(void)
     // Create proc file system
     BD37033_debug_proc = proc_create("audio_bass", 0666, NULL, &audio_proc_ops);
 
+	// Create proc file system--->addr_value
+	addr_value_proc = proc_create("audio_bass_addr_value", 0666, NULL, &audio_debug_proc_ops);
+	
 	ret = misc_register(&audio_i2c_miscdev);
 	if (ret < 0) 
 	{
