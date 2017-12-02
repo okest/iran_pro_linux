@@ -1086,7 +1086,7 @@ static int cvd_s_stream(struct v4l2_subdev *sd, int enable)
 		cvd_write(CVBSD_DEBUG_INTERRUPT_MASK, value, sd);
 		
 		/* wait for ext locked signals */
-		ret = wait_for_completion_interruptible_timeout(&dec->locked_done, msecs_to_jiffies(100));
+		ret = wait_for_completion_interruptible_timeout(&dec->locked_done, msecs_to_jiffies(170));
 
 		if (ret == 0) {
 			/* user might disconnect camera, set blank screen */
