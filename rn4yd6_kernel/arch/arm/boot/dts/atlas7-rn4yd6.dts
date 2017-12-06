@@ -2984,23 +2984,13 @@
 				clock-names = "core", "iface";
 				bus-width = <4>;
 				sd-uhs-sdr50;
-				vqmmc-supply = <&vqmmc>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&sd2_basic_pmx
 					&sd2_cdb_pmx0
 					&sd2_wpb_pmx0
 					&sample2_cfg
-//					&sd2_wpb_pmx1
 				>;
 				status = "okay";
-				vqmmc: vqmmc@2 {
-					regulator-min-microvolt = <1650000>;
-					regulator-max-microvolt = <1950000>;
-					regulator-name = "vqmmc-ldo";
-					regulator-type = "voltage";
-					regulator-boot-on;
-					regulator-allow-bypass;
-				};
 			};
 
 			sd3: sdhci@14300000 {
@@ -3008,7 +2998,8 @@
 				compatible = "sirf,atlas7-sdhc";
 				reg = <0x14300000 0x100000>;
 				interrupts = <0 23 0>;
-				clocks = <&car 101>, <&car 102>;
+				//clocks = <&car 101>, <&car 102>;
+				clocks = <&car 103>, <&car 104>;
 				clock-names = "core", "iface";
 				bus-width = <4>;
 						
@@ -3031,12 +3022,25 @@
 				clocks = <&car 103>, <&car 104>;
 				clock-names = "core", "iface";
 				bus-width = <4>;
-				loop-dma;
-				cap-power-off-card;
+				//loop-dma;
+				cd-gpios = <&gpio_1 103 0>;//rgmii_rxd_1 
+				//cap-power-off-card;
+				sd-uhs-sdr50;
+				vqmmc-supply = <&vqmmc>;//add 
+				//non-removable;
+				//max-frequency =<50000000>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&sd5_pmx>;
-				status = "disabled";
-			};
+				status = "okay";
+				vqmmc: vqmmc@2 {//add
+					regulator-min-microvolt = <1650000>;
+					regulator-max-microvolt = <1950000>;
+					regulator-name = "vqmmc-ldo";
+					regulator-type = "voltage";
+					regulator-boot-on;
+					regulator-allow-bypass;
+				};
+			};	
 
 			sd6: sdhci@14600000 {
 				cell-index = <6>;

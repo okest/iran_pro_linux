@@ -383,6 +383,8 @@ static int sdhci_sirf_probe(struct platform_device *pdev)
 		}
 		priv->clk = clk;
 	}
+	//printk(KERN_ERR"priv->clk->rate = %ld priv->pclk->rate = %ld\n",\
+		priv->clk->rate,priv->pclk->rate);
 
 	ret = clk_prepare_enable(priv->clk);
 	if (ret)
@@ -443,6 +445,7 @@ static int sdhci_sirf_probe(struct platform_device *pdev)
 			goto err_request_cd;
 		}
 		mmc_gpiod_request_cd_irq(host->mmc);
+		printk(KERN_ERR"mmc_gpio_request_cd successful !\n");
 	}
 
 	if (of_device_is_compatible(np, "sirf,prima2-sdhc"))

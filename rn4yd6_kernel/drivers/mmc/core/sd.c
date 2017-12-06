@@ -841,7 +841,7 @@ int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 		err = mmc_decode_scr(card);
 		if (err)
 			return err;
-
+		
 		/*
 		 * Fetch and process SD Status register.
 		 */
@@ -1340,10 +1340,10 @@ int mmc_attach_sd(struct mmc_host *host)
 	}
 #else
 	err = mmc_sd_init_card(host, rocr, NULL);
-	if (err)
+	if (err)   
 		goto err;
 #endif
-
+	
 	mmc_release_host(host);
 	err = mmc_add_card(host->card);
 	mmc_claim_host(host);

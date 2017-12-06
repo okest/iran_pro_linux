@@ -364,7 +364,7 @@ int mmc_of_parse(struct mmc_host *host)
 
 		if (of_find_property(np, "broken-cd", &len))
 			host->caps |= MMC_CAP_NEEDS_POLL;
-
+#if 0
 		ret = mmc_gpiod_request_cd(host, "cd", 0, true,
 					   0, &cd_gpio_invert);
 		if (ret) {
@@ -377,7 +377,7 @@ int mmc_of_parse(struct mmc_host *host)
 			}
 		} else
 			dev_info(host->parent, "Got CD GPIO\n");
-
+#endif//rxhu delete
 		/*
 		 * There are two ways to flag that the CD line is inverted:
 		 * through the cd-inverted flag and by the GPIO line itself

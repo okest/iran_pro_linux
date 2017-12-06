@@ -260,7 +260,7 @@ int mmc_app_send_scr(struct mmc_card *card, u32 *scr)
 
 	/* NOTE: caller guarantees scr is heap-allocated */
 
-	err = mmc_app_cmd(card->host, card);
+	err = mmc_app_cmd(card->host, card);//  rxhu check ok
 	if (err)
 		return err;
 
@@ -292,14 +292,23 @@ int mmc_app_send_scr(struct mmc_card *card, u32 *scr)
 
 	memcpy(scr, data_buf, sizeof(card->raw_scr));
 	kfree(data_buf);
-
+	
 	if (cmd.error)
 		return cmd.error;
 	if (data.error)
-		return data.error;
-
-	scr[0] = be32_to_cpu(scr[0]);
-	scr[1] = be32_to_cpu(scr[1]);
+		return data.error; 
+#if 0
+	if(3 == card->host->index) {//add rxhu
+		scr[0] = 0x2358000;
+		scr[1] = 0x0;
+	} else {
+		scr[0] = be32_to_cpu(scr[0]);
+		scr[1] = be32_to_cpu(scr[1]);
+	}
+#else
+		scr[0] = be32_to_cpu(scr[0]);
+		scr[1] = be32_to_cpu(scr[1]);
+#endif
 
 	return 0;
 }
