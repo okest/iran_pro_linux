@@ -395,7 +395,8 @@
 			
 			sample4_cfg: sample4@0 { 
 				sample4 { 
-					pins = "rgmii_rxd_3";
+					//pins = "rgmii_rxd_3";
+					pins = "df_re_b";
 					bias-pull-up; 
 				}; 
 			}; 
@@ -4039,11 +4040,13 @@
 		};
 		
 		usb_switch{
-			//compatible = "gpio-TPS2549";
-			//pinctrl-names = "default";
-			//pinctrl-0 = < &sample4_cfg >;
+			compatible = "gpio-TPS2549";
+			pinctrl-names = "default";
+			pinctrl-0 = < &sample4_cfg >;
 			//STATUS = <&gpio_1 99 0>; 
-			//CTL    = <&gpio_1 105 0>;  				
+			//CTL    = <&gpio_1 105 0>;  	
+			STATUS = <&gpio_0 43 0>;
+			CTL    = <&gpio_0 44 0>;
 		};
 
 		usb_set_power{

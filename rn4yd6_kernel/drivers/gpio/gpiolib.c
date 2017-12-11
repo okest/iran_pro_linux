@@ -243,7 +243,7 @@ int gpiochip_add(struct gpio_chip *chip)
 		}
 		chip->base = base;
 	}
-
+	//printk(KERN_ERR"check the base chip->base = %d\n",chip->base);
 	status = gpiochip_add_to_list(chip);
 
 	if (status == 0) {
@@ -651,7 +651,7 @@ int gpiochip_add_pingroup_range(struct gpio_chip *chip,
 {
 	struct gpio_pin_range *pin_range;
 	int ret;
-
+	//printk(KERN_ERR"gpio_offset = %d pin_group = %s\n",gpio_offset,pin_group);
 	pin_range = kzalloc(sizeof(*pin_range), GFP_KERNEL);
 	if (!pin_range) {
 		chip_err(chip, "failed to allocate pin ranges\n");
@@ -700,7 +700,7 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
 {
 	struct gpio_pin_range *pin_range;
 	int ret;
-
+	//printk(KERN_ERR"gpio_offset = %d pin_offset = %d npins = %d\n",gpio_offset,pin_offset,npins);
 	pin_range = kzalloc(sizeof(*pin_range), GFP_KERNEL);
 	if (!pin_range) {
 		chip_err(chip, "failed to allocate pin ranges\n");
@@ -726,6 +726,8 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
 		 gpio_offset, gpio_offset + npins - 1,
 		 pinctl_name,
 		 pin_offset, pin_offset + npins - 1);
+	//printk(KERN_ERR"pin_range->range.id = %d pin_range->range.name = %s pin_range->range.base = %d pin_range->range.npins = %d\n",\
+		pin_range->range.id , pin_range->range.name, pin_range->range.base, pin_range->range.npins);
 
 	list_add_tail(&pin_range->node, &chip->pin_ranges);
 
