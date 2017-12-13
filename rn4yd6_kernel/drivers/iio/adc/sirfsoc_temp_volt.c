@@ -68,7 +68,7 @@ static ssize_t adc_wirte_zjc(struct file *filp, const char __user *buffer, size_
 
 static int sirfsoc_sensor_probe(struct platform_device *pdev)
 {
-	printk(KERN_EMERG "zjc adc [tmp] probe is begin\n");
+	printk(KERN_DEBUG "zjc adc [tmp] probe is begin\n");
 	struct device *dev = &pdev->dev;
 	
 	struct sirfsoc_sensor *sirfsoc_sensor;
@@ -96,7 +96,7 @@ static int sirfsoc_sensor_probe(struct platform_device *pdev)
 	if (ret < 0)
 		printk(KERN_EMERG "read channel error\n");
 	
-	printk(KERN_EMERG "first read  adc6 value is %d\n",val);
+	printk(KERN_DEBUG "first read  adc6 value is %d\n",val);
 
 	platform_set_drvdata(pdev, sirfsoc_sensor);
 
