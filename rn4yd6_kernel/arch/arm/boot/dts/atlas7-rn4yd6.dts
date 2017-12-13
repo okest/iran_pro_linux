@@ -3280,7 +3280,13 @@
 				cali-gain0 = <0>;
 				cali-gain2 = <0>;
 
-				status = "okay";								
+				status = "okay";			
+				sirfsoc_sensor:sirfsoc_sensor {
+					status = "okay";
+					compatible = "sirf,atlas7-sensor";
+					io-channels = <&adc 7>;
+					io-channel-names = "adc6";
+				};	
 			};
 
 			pulsec@10d90000 {

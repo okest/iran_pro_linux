@@ -127,6 +127,7 @@ static int __of_iio_channel_get(struct iio_channel *channel,
 		err = -EINVAL;
 		goto err_put;
 	}
+	printk("index = %d\n",index);
 	channel->channel = &indio_dev->channels[index];
 
 	return 0;
