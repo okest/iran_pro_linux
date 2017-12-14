@@ -3919,14 +3919,14 @@
 			display-timings {
 				native-mode = <&timing0>;
 				timing0: timing0 {
-					clock-frequency = <33300000>;
+					clock-frequency = <29200000>;
 					hactive = <800>;
 					vactive = <480>;
-					hfront-porch = <204>;
+					hfront-porch = <40>;
 					hback-porch = <43>;
 					hsync-len = <1>;
 					vback-porch = <23>;
-					vfront-porch = <22>;
+					vfront-porch = <13>;
 					vsync-len = <1>;
 					hsync-active = <0>;
 					vsync-active = <0>;
@@ -3947,14 +3947,14 @@
 				native-mode = <&timing1>;
 				timing1: timing1 {
 
-					clock-frequency = <33300000>;
+					clock-frequency = <29200000>;
 					hactive = <800>;
 					vactive = <480>;
-					hfront-porch = <204>;//
+					hfront-porch = <40>;//
 					hback-porch = <43>;
 					hsync-len = <1>;
 					vback-porch = <23>;
-					vfront-porch = <22>;
+					vfront-porch = <13>;
 					vsync-len = <1>;
 					hsync-active = <0>;
 					vsync-active = <0>;
@@ -4003,7 +4003,8 @@
 			pwms = <&pwm 3 50000>;	
 			//brightness-levels = <0 95 109 112 118 125 130 135 140 145 155 165 175 182 192 255>;
 			//brightness-levels = <0 131 136 141 146 152 157 163 168 174 180 186 192 198 205 255>;
-			brightness-levels = <0 122 131 136 141 146 152 157 163 168 174 180 186 192 198 205 255>;
+			//brightness-levels = <0 122 131 136 141 146 152 157 163 168 174 180 186 192 198 205 255>;
+			  brightness-levels = <0 75  85 98  108 117 125 130 135 140 145 155 165 175 182 192 255>;
 			default-brightness-level = <11>;
 		};
 		
