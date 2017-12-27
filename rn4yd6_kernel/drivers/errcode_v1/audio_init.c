@@ -176,7 +176,107 @@ int  audio_i2c_write(unsigned char  addr, unsigned char value)
 	printk(KERN_EMERG "audio wirte times %d \n",count++);
 	return 0;
 }
+
+#if 1 
+
+int pmu_read_buff(struct i2c_client * client, unsigned char  *buf,int  len)
+
+{
+
+	struct i2c_msg msgs[2];
+
+	int  ret = -1;
+
 	
+
+    msgs[0].flags = !I2C_M_RD;
+
+    msgs[0].addr  = 0x32;
+
+    msgs[0].len   = 1;
+
+    msgs[0].buf   = &buf[0]; 
+
+
+
+	printk(KERN_EMERG"[%s][%d]=======> addr=0x%x len=0x%x flags =0x%x :",__func__, __LINE__,msgs[0].addr,msgs[0].len,msgs[0].flags);
+
+    msgs[1].flags = I2C_M_RD;
+
+    msgs[1].addr  = 0x32;
+
+    msgs[1].len   = 1;
+
+    msgs[1].buf   = &buf[1];  
+
+
+
+	printk(KERN_EMERG"[%s][%d]=======> addr=0x%x len=0x%x flags =0x%x :",__func__, __LINE__,msgs[1].addr,msgs[1].len,msgs[1].flags);
+
+	
+
+    ret = i2c_transfer(client->adapter, msgs, 2);         
+
+		
+
+    return (ret == 1) ? len : ret;
+
+}
+
+
+
+int pmu_write_buff(struct i2c_client * client, unsigned char  *buf,int  len)
+
+{
+
+	int ret = -1; 
+
+	struct i2c_msg msgs;
+
+    
+
+	int i=0;
+
+
+
+	msgs.flags = !I2C_M_RD;
+
+	msgs.addr  = 0x32;
+
+	msgs.len   = len ;
+
+	msgs.buf   = buf;
+
+
+
+#if 1
+
+	printk(KERN_EMERG"[%s][%d]=======> addr=0x%x len=0x%x flags =0x%x :",__func__, __LINE__,msgs.addr,msgs.len,msgs.flags);
+
+	for(i = 0; i < msgs.len; i++)
+
+	{
+
+		printk(KERN_EMERG "  0x%x   ", msgs.buf[i] );  
+
+	}
+
+	printk(KERN_ALERT"  \n ");  
+
+	
+
+#endif	
+
+
+
+	ret = i2c_transfer(client->adapter, &msgs, 1);
+
+}
+
+
+
+#endif
+
 
 static int audio_probe(struct i2c_client *client,const struct i2c_device_id *id)  
 {	
@@ -192,6 +292,34 @@ static int audio_probe(struct i2c_client *client,const struct i2c_device_id *id)
 		printk(KERN_ALERT"I2C check functionality failed\n");
         	return -ENODEV;
     	}
+#if 1
+
+	unsigned char buf[2];
+
+	buf[0] = 0x30;
+
+	ret = pmu_read_buff(client, buf, 2);
+
+	printk(KERN_EMERG "pmu--->1 = 0x%x 2= 0x%x \n",buf[0],buf[1]);
+	
+
+	buf[0] = 0x30;
+
+	buf[1] = 0x13;
+
+	ret = pmu_write_buff(client,buf,2);
+
+	printk(KERN_EMERG "pmu--->2 = 0x%x 2= 0x%x \n",buf[0],buf[1]);
+
+	
+	buf[0] = 0x30;
+
+	ret = pmu_read_buff(client, buf, 2);
+
+	printk(KERN_EMERG "pmu--->3 = 0x%x 2= 0x%x \n",buf[0],buf[1]);
+
+#endif
+	
 	
 	
 	//音频通道初始化，输入通道+输出通道+低重音通道
