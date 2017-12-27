@@ -21,6 +21,7 @@
 #include<linux/string.h>
 
 #include <linux/miscdevice.h>
+#include <linux/proc_fs.h>
 
 #define DEBUG
 
@@ -185,6 +186,35 @@ static struct miscdevice misc = {
  .fops = &fsync_fops,
 };
 
+#if 1 
+static struct proc_dir_entry *check_proc = NULL;
+
+static ssize_t aux_status_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos);
+static ssize_t aux_status_write_proc(struct file *file, const char __user * page, size_t size, loff_t *ppos);
+
+static const struct file_operations aux_proc_ops = {
+    .owner = THIS_MODULE,
+    .read = aux_status_read_proc,
+    .write = aux_status_write_proc,
+};
+
+
+static ssize_t aux_status_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
+{
+	int ret;
+	int value = gpio_get_value(AUX_DET_GPIO);
+	
+	ret = sprintf(page,"%d",value);
+	
+	return ret;
+}
+
+static ssize_t aux_status_write_proc(struct file *file, const char __user *page, size_t size, loff_t *ppos)
+{
+	return 0;
+}
+
+#endif 
 
 //enter 
 int __init aux_det_init(void)
@@ -221,6 +251,9 @@ int __init aux_det_init(void)
     	printk(KERN_EMERG "------------request irq aux failed\n");		
 		return -1;
     }
+	
+	//添加检测设备的接口
+	check_proc = proc_create("aux_in_status", 0666, NULL, &aux_proc_ops);
 
     return 0;
 }
