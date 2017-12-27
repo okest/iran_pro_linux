@@ -2765,8 +2765,8 @@
 					    reg = <0x17030000 0x1000>;
 					    interrupts = <0 25 0>;
 					    clocks = <&car 65>;
-					    clock-frequency = <400000>;
-					  //clocek-frequency = <228000>;
+					  //clock-frequency = <400000>;
+					    clock-frequency = <228000>;
 					    #address-cells = <1>;
 					    #size-cells = <0>;
 					    pinctrl-names = "default";
