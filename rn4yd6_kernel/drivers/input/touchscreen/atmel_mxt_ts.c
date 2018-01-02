@@ -254,7 +254,7 @@ static ssize_t atmel_ts_enable_read_proc(struct file *file, char __user *page, s
 	printk("ts irq = %d\n",irq_all);
 	return 0;
 }
-int TS_ACC_FLAG = 0;
+static int TS_ACC_FLAG = 0;
 static ssize_t atmel_ts_enable_write_proc(struct file *filp, const char __user *buffer, size_t count, loff_t *off)
 {
 //	int ret;
