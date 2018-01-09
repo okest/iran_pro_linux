@@ -345,9 +345,9 @@ void debug_uart_rx(struct uart_port *port, unsigned int max_rx_count)
 		ch = rd_regl(port, ureg->sirfsoc_rx_fifo_data) |
 			SIRFUART_DUMMY_READ;
 		//LOGD("ch = 0x%x",ch);
-		if(ch != '~' && ch != ' ')
+		if((ch != '~' && ch != ' ') || (read_count == 11))
 		{
-			LOGD("ch = 0x%x",ch);
+			LOGD("ch = 0x%x read_count = %d",ch,read_count);
 			uart_recv_buf[read_count] = ch;//save char
 			rx_count++;
 			read_count++;
