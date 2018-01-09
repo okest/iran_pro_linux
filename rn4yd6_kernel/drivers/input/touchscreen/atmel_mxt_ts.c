@@ -13,10 +13,7 @@
  * option) any later version.
  *
  */
-#include <linux/fs.h>
-#include <linux/kernel.h>
-#include <linux/proc_fs.h>
-#include <linux/string.h>
+
 #include <linux/acpi.h>
 #include <linux/dmi.h>
 #include <linux/module.h>
@@ -234,63 +231,6 @@ enum t100_type {
 #define MXT_PIXELS_PER_MM	20
 
 #define DEBUG_MSG_MAX		200
-
-//------------------------------ACC in
-static struct proc_dir_entry *atmel_ts_enable_irq = NULL;
-
-unsigned int irq_all;
-
-static ssize_t atmel_ts_enable_read_proc(struct file *, char __user *, size_t, loff_t *);
-static ssize_t atmel_ts_enable_write_proc(struct file *, const char __user *, size_t, loff_t *);
-
-static const struct file_operations enable_proc_ops = {
-    .owner = THIS_MODULE,
-    .read = atmel_ts_enable_read_proc,
-    .write = atmel_ts_enable_write_proc,
-};
-
-static ssize_t atmel_ts_enable_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
-{
-	printk("ts irq = %d\n",irq_all);
-	return 0;
-}
-static int TS_ACC_FLAG = 0;
-static ssize_t atmel_ts_enable_write_proc(struct file *filp, const char __user *buffer, size_t count, loff_t *off)
-{
-//	int ret;
-	char recv[3];
-	
-//    	copy_from_user(recv,buffer,count);
-	memcpy(recv,buffer,count);
- //       return -EFAULT;
-	
-	recv[2] ='\0';
-	
-	if(strcmp(recv,"01") == 0 )
-	{	 
-		if(TS_ACC_FLAG == 1)
-        	{
-           		TS_ACC_FLAG = 0;
-				enable_irq(irq_all);
-				printk(KERN_EMERG"[%d][ACC ON]  enable_irq is %s  \n",__LINE__, recv);				
-			}
-	}
-	
-	if(strcmp(recv,"02") == 0)
-	{
-		if(TS_ACC_FLAG == 0)
-        	{
-				TS_ACC_FLAG = 1;
-				disable_irq(irq_all);
-				printk(KERN_EMERG"[%d][ACC OFF] disable_irq is  %s\n",__LINE__, recv);
-			}
-	}	
-
-	return count;
-}
-
-//------------------------------ACC out
-
 
 struct mxt_info {
 	u8 family_id;
@@ -1264,13 +1204,12 @@ static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 	 */
 	if (!pressure && !hover)
 		pressure = MXT_PRESSURE_DEFAULT;
-#if 0
+
 	input_mt_slot(input_dev, id);
-#endif
+
 	if (active) {
 		dev_dbg(dev, "[%u] type:%u x:%u y:%u a:%02X p:%02X v:%02X\n",
 			id, type, x, y, major, pressure, orientation);
-#if 0
 		input_mt_report_slot_state(input_dev, tool, 1);
 		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
@@ -1278,30 +1217,15 @@ static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 		input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
 		input_report_abs(input_dev, ABS_MT_DISTANCE, distance);
 		input_report_abs(input_dev, ABS_MT_ORIENTATION, orientation);
-#else 
-		input_report_key(input_dev, BTN_TOUCH, 1);
-		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
-		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
-		//input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, w);
-		//input_report_abs(input_dev, ABS_MT_WIDTH_MAJOR, w);
-		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, major);
-		input_report_abs(input_dev, ABS_MT_TRACKING_ID, id);
-		input_mt_sync(input_dev);
-	
-#endif
 #if 0//defined(CONFIG_FORYOU_CSR)
 		pr_err("Hawayi [%s] Line:%d   x:%d y:%d   max_x:%d max_y:%d\r\n", 
 			__FUNCTION__, __LINE__, x, y, data->max_x, data->max_y);
 #endif
 	} else {
 		dev_dbg(dev, "[%u] release\n", id);
-#if 0
+
 		/* close out slot */
 		input_mt_report_slot_state(input_dev, 0, 0);
-#else
-		input_report_key(input_dev, BTN_TOUCH, 0);
-#endif
-
 	}
 
 	data->update_input = true;
@@ -2067,7 +1991,6 @@ static int mxt_acquire_irq(struct mxt_data *data)
 		/* Presence of data->irq means IRQ initialised */
 		data->irq = data->client->irq;
 	} else {
-		disable_irq(data->irq);
 		LOGD("Now enable the irq hei hei");
 		enable_irq(data->irq);
 	}
@@ -2677,17 +2600,12 @@ static int mxt_initialize_input_device(struct mxt_data *data)
 	}
 
 	/* For multi touch */
-#if 0
 	error = input_mt_init_slots(input_dev, num_mt_slots, mt_flags);
 	if (error) {
 		dev_err(dev, "Error %d initialising slots\n", error);
 		goto err_free_mem;
 	}
-#else
-	input_dev->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
-	__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
-#endif
+
 	if (data->multitouch == MXT_TOUCH_MULTITOUCHSCREEN_T100) {
 		input_set_abs_params(input_dev, ABS_MT_TOOL_TYPE,
 				     0, MT_TOOL_MAX, 0, 0);
@@ -3882,10 +3800,6 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto err_free_irq;
 	LOGD("data->suspended = %d , data->in_bootloader = %d",data->suspended,data->in_bootloader);
 	
-	// Create proc file system
-	irq_all = data->irq;
-	printk("ts irq = %d \n",irq_all);
-	atmel_ts_enable_irq = proc_create("ts_ops", 0666, NULL, &enable_proc_ops);
 	//add rxhu
 		LOGD("data->suspended = %d",data->suspended);
 		mxt_process_messages_until_invalid(data);
@@ -4021,4 +3935,3 @@ module_i2c_driver(mxt_driver);
 MODULE_AUTHOR("Joonyoung Shim <jy0922.shim@samsung.com>");
 MODULE_DESCRIPTION("Atmel maXTouch Touchscreen driver");
 MODULE_LICENSE("GPL");
-
