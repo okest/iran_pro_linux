@@ -345,9 +345,10 @@ void debug_uart_rx(struct uart_port *port, unsigned int max_rx_count)
 		ch = rd_regl(port, ureg->sirfsoc_rx_fifo_data) |
 			SIRFUART_DUMMY_READ;
 		//LOGD("ch = 0x%x",ch);
-		if((ch != '~' && ch != ' ') || (read_count == 11))
+		//if((ch != '~' && ch != ' ') || (read_count == 11))
+		if(1)
 		{
-			LOGD("ch = 0x%x read_count = %d",ch,read_count);
+			//LOGD("ch = 0x%x read_count = %d",ch,read_count);
 			uart_recv_buf[read_count] = ch;//save char
 			rx_count++;
 			read_count++;
@@ -1025,11 +1026,14 @@ static void sirfsoc_uart_set_termios(struct uart_port *port,
 
 //add rxhu
 #if 1
-static int pio_mode_f = 0;//add rxhu 
-static int work_run_f = 0;//for work
+static int  pio_mode_f = 0;//add rxhu 
+static int  work_run_f = 0;//for work
+//static bool frame_flag = false;
 
 struct sk_buff_head uart_recv_queue;
 unsigned char uart_recv_buf[UART_RX_BUF_SIZE];
+unsigned char tmp_frame_buf[128];
+unsigned int  tmp_frame_index = 0;
 
 
 struct workqueue_struct *uart_keventd_wq;
@@ -1042,14 +1046,14 @@ static void uart_rx_timeout_delay(unsigned int msecs)
 	while (timeout)
 		timeout = schedule_timeout_uninterruptible(timeout);
 }
-
+#if 1
 static void uart_recv_work_handle(struct work_struct *work)
 {
 	struct sk_buff *skb; 
     unsigned char *skbdata;
 	unsigned int sk_len = 0;
 
-	uart_rx_timeout_delay(13);//timeout for RX
+	uart_rx_timeout_delay(25);//timeout for RX
 	//uart_recv_buf[read_count] = '\0';
 	//read_count++;
 	sk_len = read_count + 1;
@@ -1063,6 +1067,7 @@ static void uart_recv_work_handle(struct work_struct *work)
 	}
 	
 	//if(uart_recv_buf[0] != 'A' || uart_recv_buf[1] != '6' || uart_recv_buf[2] != '6' || uart_recv_buf[3] != 'A')
+#if 0
 	if(uart_recv_buf[0] != 0x6a || uart_recv_buf[1] != 0xa6)
 	{
 		memset(uart_recv_buf, 0, UART_RX_BUF_SIZE);
@@ -1070,6 +1075,7 @@ static void uart_recv_work_handle(struct work_struct *work)
 		read_count = 0;
 		return ;
 	}
+#endif
 
 	skb = alloc_skb(sk_len, GFP_KERNEL); 
     if (!skb) 
@@ -1086,7 +1092,7 @@ static void uart_recv_work_handle(struct work_struct *work)
 	skb_queue_tail(&(uart_recv_queue), skb);  
 
 	//LOG_ERR("come to schedule end!");
-	//print_hex_dump(KERN_ERR,"rxhu",DUMP_PREFIX_OFFSET,16,1,skb->data,sk_len,1);
+	//print_hex_dump(KERN_ERR,"skb_queue_tail",DUMP_PREFIX_OFFSET,16,1,skb->data,sk_len,1);
 	/*clear the falg*/
 	wake_up_interruptible(&read_wait_queue);
 	memset(uart_recv_buf, 0, UART_RX_BUF_SIZE);
@@ -1094,6 +1100,111 @@ static void uart_recv_work_handle(struct work_struct *work)
 	read_count = 0;
 
 }
+#else
+static void uart_recv_work_handle(struct work_struct *work)
+{
+	struct sk_buff *skb; 
+    unsigned char *skbdata;
+	unsigned int sk_len = 0;
+	unsigned int recv_buff_len = 0;
+	unsigned int read_index = 0,index = 0;
+	unsigned short frame_len = -1;
+	unsigned char frame_buff[128];
+	unsigned char len_buf[2];
+	
+	memset(frame_buff,0,sizeof(frame_buff));
+
+	uart_rx_timeout_delay(30);//timeout for RX
+	recv_buff_len = read_count;
+	
+	//if((uart_recv_buf[0] != 0x6a || uart_recv_buf[1] != 0xa6) && (false == frame_flag))//判断是否续帧
+	if((uart_recv_buf[0] != 0x6a || uart_recv_buf[1] != 0xa6 || uart_recv_buf[2] == 0x81) && (false == frame_flag))
+	{
+		memset(uart_recv_buf,0, UART_RX_BUF_SIZE);
+		work_run_f = 0;
+		read_count = 0;
+		return ;
+	}
+	
+	if((uart_recv_buf[0] == 0x6a && uart_recv_buf[1] == 0xa6 && uart_recv_buf[2] == 0x81)) {
+		memset(uart_recv_buf,0, UART_RX_BUF_SIZE);
+		work_run_f = 0;
+		read_count = 0;
+		return ;
+	}
+	
+//	print_hex_dump(KERN_ERR," rxhu ",DUMP_PREFIX_OFFSET,16,1,uart_recv_buf,recv_buff_len,1);
+	LOG_ERR("Begin data handle! frame_flag = %d",frame_flag);
+	while(index != recv_buff_len) {
+	
+		if((uart_recv_buf[index] == 0x6a) && (uart_recv_buf[index + 1] == 0xa6))
+			read_index = 0;
+		
+		if(read_index == 5) {//first come ture
+			frame_buff[read_index++] = len_buf[0] = uart_recv_buf[index++];
+			frame_buff[read_index++] = len_buf[1] = uart_recv_buf[index++];
+			frame_len = ((len_buf[0] << 8) | len_buf[1]) + 8;
+			LOG_ERR("get the data len  frame_len = %d!!",frame_len);
+		}
+		
+		if(frame_flag == true) {
+			tmp_frame_buf[tmp_frame_index++] = uart_recv_buf[index++];
+			LOG_ERR("tmp_frame_buf[%d] = %x uart_recv_buf[%d] = %x",tmp_frame_index - 1,tmp_frame_buf[tmp_frame_index - 1],index - 1,uart_recv_buf[index - 1]);
+			if((uart_recv_buf[index] == 0x6a) && (uart_recv_buf[index + 1] == 0xa6)) {
+				read_index = frame_len = sk_len = ((tmp_frame_buf[5] << 8) | tmp_frame_buf[6]) + 8;
+				skb = alloc_skb(sk_len, GFP_KERNEL); 
+				if (!skb) { 
+					LOG_ERR("alloc_skb error !!");
+					return ;
+				}
+				skbdata = skb_put(skb,sk_len);//获取skb数据部分的指针
+				memcpy(skbdata, tmp_frame_buf, sk_len);
+				skb_queue_tail(&(uart_recv_queue), skb);
+				memset(tmp_frame_buf,0,sizeof(tmp_frame_buf));
+				tmp_frame_index = 0;	
+				frame_flag = false; //update the flage
+				wake_up_interruptible(&read_wait_queue);
+				LOG_ERR("save the lost frame!");
+			}
+		} else {
+			frame_buff[read_index++] = uart_recv_buf[index++];
+			LOG_ERR("frame_buff[%d] = %x uart_recv_buf[%d] = %x",read_index - 1 ,frame_buff[read_index - 1],index - 1,uart_recv_buf[index - 1]);
+			
+			if((frame_len == read_index) && (tmp_frame_index == 0)) {//second come true
+				sk_len = frame_len;
+				skb = alloc_skb(sk_len, GFP_KERNEL); 
+				if (!skb) { 
+					LOG_ERR("alloc_skb error !!");
+					return ;
+				}
+				skbdata = skb_put(skb,sk_len);//获取skb数据部分的指针
+				memcpy(skbdata, frame_buff, sk_len);
+				//print_hex_dump(KERN_ERR," rxhu ",DUMP_PREFIX_OFFSET,16,1,frame_buff,frame_len,1);
+				skb_queue_tail(&(uart_recv_queue), skb);
+				wake_up_interruptible(&read_wait_queue);
+				LOG_ERR("add the data to queue !!");
+			}
+		}
+	}
+	
+	LOG_ERR("index = %d recv_buff_len = %d",index,recv_buff_len);
+	LOG_ERR("Data handle end frame_len = %d read_index = %d",frame_len,read_index);
+	if(read_index != frame_len) {
+		frame_flag = true;
+		memcpy(tmp_frame_buf, frame_buff, read_index);
+		tmp_frame_index = read_index;
+		LOG_ERR("tmp_frame_index = %d",tmp_frame_index);
+	}
+		
+	
+	//wake_up_interruptible(&read_wait_queue);
+	memset(uart_recv_buf, 0, UART_RX_BUF_SIZE);
+	work_run_f = 0;
+	read_count = 0;
+
+}
+	
+#endif
 
 void debug_uart_recv_work_init(void)
 {

@@ -35,12 +35,28 @@ int uart_debug_drv_close(struct inode *inode, struct file *filp)
 
 ssize_t uart_debug_drv_write(struct file *filp, const char __user *buf, size_t count, loff_t *fpos)
 {
+	char *tmp_begin_offset = 0;
+	//char tmp_buf[128];
 	LOGD("-----------------uart_debug_drv_write----------count = %d---------------",count);
 	memset(communicate_buf,0,NUMBYTES);
+	//memset(tmp_buf,0,sizeof(tmp_buf));
+	
 	if (!copy_from_user(communicate_buf, (unsigned char *)buf, count))
 	{
-		LOGD("the user write data is = %s",communicate_buf);
-		debug_uart_serial_tx(communicate_buf,count);
+		//LOGD("the user write data is = %s",communicate_buf);
+	//	print_hex_dump(KERN_ERR,"fir",DUMP_PREFIX_OFFSET,16,1,communicate_buf,count,1);
+		/*fixme 128 handle*/
+		if(count > 120)
+			debug_uart_serial_tx(communicate_buf,120);//first
+		else 
+			debug_uart_serial_tx(communicate_buf,count);
+			
+		if(count > 120) {
+			tmp_begin_offset = communicate_buf + 120;
+	//		print_hex_dump(KERN_ERR,"sec",DUMP_PREFIX_OFFSET,16,1,tmp_begin_offset,count - 120,1);
+			debug_uart_serial_tx(tmp_begin_offset,count - 120);//second
+		}
+		//memcpy(tmp_buf,tmp_begin_offset,count - 120);
 		return count;
 	}
 	return -1;
@@ -70,7 +86,7 @@ ssize_t  uart_debug_drv_read(struct file *filp, char __user *buf, size_t count, 
 	} 
 
 	//pr_err("skb->data = %s\n",skb->data);
-	//print_hex_dump(KERN_ERR,"",DUMP_PREFIX_OFFSET,16,1,skb->data,skb->len,1);
+//	print_hex_dump(KERN_ERR," skb_dequeue ",DUMP_PREFIX_OFFSET,16,1,skb->data,skb->len,1);
 #if 1
 	//skb->data[skb->len - 1] = '\0';
 	if (copy_to_user(buf, skb->data, skb->len)) { 
